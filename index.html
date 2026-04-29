@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eteris — Minecraft Server</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --dirt:    #866043;
+      --dirt-dk: #5c3d1e;
+      --grass:   #5d9e32;
+      --stone:   #828282;
+      --wood:    #c6a95c;
+      --mc-dark: #1d1d1d;
+      --mc-bg:   #2a2a2a;
+      --mc-panel:#373737;
+      --mc-hl:   rgba(255,255,255,0.18);
+      --mc-sh:   rgba(0,0,0,0.55);
+      --mc-text: #fff;
+      --mc-muted:#999;
+      --mc-green:#55ff55;
+      --mc-cyan: #55ffff;
+      --mc-yell: #ffff55;
+      --mc-red:  #ff5555;
+      --font:    'Press Start 2P', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--mc-dark);
+      color: var(--mc-text);
+      overflow-x: hidden;
+    }
+
+    /* =====================
+       MINECRAFT BUTTON
+    ===================== */
+    .mc-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--font);
+      font-size: 10px;
+      color: var(--mc-text);
+      background: #555;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 10px 18px;
+      position: relative;
+      user-select: none;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.6);
+      /* top+left highlight, bottom+right shadow */
+      box-shadow:
+        inset  2px  2px 0 rgba(255,255,255,0.22),
+        inset -2px -2px 0 rgba(0,0,0,0.5),
+        3px 3px 0 rgba(0,0,0,0.5);
+      transition: filter 0.08s;
+    }
+    .mc-btn:hover {
+      filter: brightness(1.25);
+      color: var(--mc-yell);
+      text-shadow: 1px 1px 0 rgba(80,60,0,0.8);
+    }
+    .mc-btn:active {
+      box-shadow:
+        inset  2px  2px 0 rgba(0,0,0,0.4),
+        inset -2px -2px 0 rgba(255,255,255,0.1),
+        1px 1px 0 rgba(0,0,0,0.5);
+      transform: translate(1px,1px);
+    }
+    .mc-btn.green { background: #2d6e1a; }
+    .mc-btn.green:hover { filter: brightness(1.3); }
+    .mc-btn.stone { background: #6a6a6a; }
+    .mc-btn.wide  { width: 100%; }
+
+    /* =====================
+       MC PANEL
+    ===================== */
+    .mc-panel {
+      background: var(--mc-bg);
+      border: 3px solid;
+      border-color: #5a5a5a #1a1a1a #1a1a1a #5a5a5a;
+      box-shadow:
+        inset  2px  2px 0 rgba(255,255,255,0.1),
+        inset -2px -2px 0 rgba(0,0,0,0.4),
+        4px 4px 0 rgba(0,0,0,0.5);
+      padding: 20px 22px;
+    }
+
+    /* =====================
+       NAV
+    ===================== */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: rgba(20,20,20,0.96);
+      border-bottom: 3px solid #111;
+      box-shadow: 0 3px 0 rgba(255,255,255,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 52px;
+      backdrop-filter: blur(8px);
+    }
+    .nav-logo {
+      font-size: 13px;
+      color: #888;
+      text-shadow: 1px 1px 0 #111;
+      display: flex; align-items: center; gap: 10px;
+      letter-spacing: 2px;
+    }
+    .nav-links { display: flex; gap: 4px; }
+    .nav-a {
+      font-family: var(--font);
+      font-size: 8px;
+      color: #bbb;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px 12px;
+      text-decoration: none;
+      transition: color 0.1s;
+      display: block;
+    }
+    .nav-a:hover { color: var(--mc-yell); }
+
+    /* =====================
+       HERO SECTION
+    ===================== */
+    #hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding-bottom: 200px;
+    }
+
+    /* Sky */
+    #hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg,
+        #1a2f4e 0%, #1e3d62 30%,
+        #2d6090 55%, #6baed6 75%,
+        #a8cfe8 88%, #c9e4f5 100%);
+      z-index: 0;
+    }
+
+    /* Terrain canvas */
+    #terrain-canvas {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 100%; height: 240px;
+      z-index: 1;
+    }
+
+    /* Fog blending terrain into sections below */
+    #hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 80px;
+      background: linear-gradient(transparent, var(--mc-dark));
+      z-index: 2;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0;
+      margin-top: -60px;
+    }
+
+    /* Sun */
+    .sun {
+      width: 56px; height: 56px;
+      background: #ffff55;
+      image-rendering: pixelated;
+      position: absolute;
+      top: 6%;
+      right: 10%;
+      z-index: 1;
+      box-shadow: 0 0 0 4px #ffff55, 0 0 24px 8px rgba(255,255,85,0.4);
+    }
+
+    /* Stars */
+    .stars { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+    .star { position: absolute; background: #fff; }
+
+    /* Title */
+    .server-title {
+      font-size: clamp(32px, 6vw, 58px);
+      color: var(--mc-yell);
+      text-shadow:
+        3px 3px 0 #7a4f00,
+        5px 5px 0 rgba(0,0,0,0.5);
+      letter-spacing: 6px;
+      margin-bottom: 12px;
+      animation: titleFloat 4s ease-in-out infinite;
+    }
+    @keyframes titleFloat {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-8px); }
+    }
+
+    .server-sub {
+      font-size: 8px;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 3px;
+      margin-bottom: 44px;
+    }
+
+    /* ── STATUS + CONNECT ROW ── */
+    .hero-cards {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+      max-width: 760px;
+    }
+
+    .hero-card {
+      flex: 1;
+      min-width: 280px;
+      max-width: 360px;
+    }
+
+    .card-title {
+      font-size: 8px;
+      color: #888;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+    }
+
+    /* Status dot */
+    .s-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .s-dot {
+      width: 12px; height: 12px; flex-shrink: 0;
+      background: #666;
+      transition: background .3s, box-shadow .3s;
+    }
+    .s-dot.on  { background: var(--mc-green); box-shadow: 0 0 8px var(--mc-green); }
+    .s-dot.off { background: var(--mc-red); }
+    .s-label { font-size: 11px; }
+    .s-ver   { font-size: 8px; color: #777; margin-left: auto; }
+    .s-meta  { font-size: 8px; color: #777; margin-bottom: 4px; }
+    .s-motd  {
+      font-size: 8px; color: var(--mc-yell);
+      border-top: 2px solid #333;
+      padding-top: 10px; margin-top: 10px;
+      line-height: 1.9; display: none;
+    }
+
+    /* IP display */
+    .ip-box {
+      font-size: 11px;
+      color: var(--mc-yell);
+      text-shadow: 1px 1px 0 #5a4000;
+      background: #1a1a1a;
+      border: 2px solid #333;
+      padding: 12px;
+      text-align: center;
+      letter-spacing: 2px;
+      margin-bottom: 14px;
+    }
+
+    .btn-col { display: flex; flex-direction: column; gap: 8px; }
+
+    /* Toast */
+    .toast {
+      font-size: 8px;
+      color: var(--mc-green);
+      text-align: center;
+      min-height: 14px;
+      opacity: 0;
+      transition: opacity .25s;
+      margin-top: 4px;
+    }
+    .toast.show { opacity: 1; }
+
+    /* =====================
+       DIVIDER BLOCK ROW
+    ===================== */
+    .block-divider {
+      width: 100%;
+      height: 32px;
+      display: flex;
+      overflow: hidden;
+    }
+    .bd-block {
+      height: 32px;
+      flex-shrink: 0;
+      width: 32px;
+    }
+
+    /* =====================
+       CONTENT SECTIONS
+    ===================== */
+    .content-section {
+      padding: 60px 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-heading {
+      font-size: 14px;
+      color: var(--mc-text);
+      text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+      margin-bottom: 6px;
+    }
+    .section-sub {
+      font-size: 8px;
+      color: #777;
+      margin-bottom: 32px;
+      letter-spacing: 1px;
+    }
+
+    /* =====================
+       GALLERY
+    ===================== */
+    .upload-area {
+      border: 3px dashed #444;
+      padding: 40px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      background: rgba(0,0,0,0.25);
+      margin-bottom: 28px;
+    }
+    .upload-area:hover, .upload-area.drag {
+      border-color: var(--mc-green);
+      background: rgba(85,255,85,0.04);
+    }
+    .upload-area input { display: none; }
+    .upload-icon { font-size: 0; margin-bottom: 10px; }
+    .upload-txt { font-size: 8px; color: #777; line-height: 2.2; }
+
+    .preview-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .prev-img {
+      width: 72px; height: 72px; object-fit: cover;
+      border: 2px solid #555;
+    }
+    .up-actions { display: none; align-items: center; gap: 12px; margin-bottom: 6px; }
+    .up-status  { font-size: 8px; color: var(--mc-green); }
+
+    /* Grid */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .g-item {
+      border: 3px solid #3a3a3a;
+      background: #1a1a1a;
+      cursor: pointer;
+      transition: border-color .15s, transform .15s;
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+    }
+    .g-item:hover { border-color: var(--mc-green); transform: translateY(-3px); }
+    .g-item img  { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+    .g-caption   {
+      padding: 8px 10px;
+      font-size: 7px;
+      color: #777;
+      background: #222;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .g-empty, .g-loading {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 60px;
+      font-size: 9px;
+      color: #555;
+      line-height: 2.5;
+    }
+
+    /* Lightbox */
+    #lb {
+      display: none;
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(0,0,0,0.93);
+      align-items: center; justify-content: center;
+      flex-direction: column; gap: 14px;
+      padding: 20px;
+    }
+    #lb.open { display: flex; }
+    #lb img {
+      max-width: 90vw; max-height: 82vh;
+      border: 3px solid #555;
+      box-shadow: 5px 5px 0 rgba(0,0,0,0.7);
+    }
+    #lb-close {
+      position: fixed; top: 18px; right: 24px;
+    }
+
+    /* =====================
+       MAP SECTION
+    ===================== */
+    .map-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .map-icon { font-size: 0; width:64px;height:64px;margin:0 auto 24px;background:#333;border:3px solid #555;box-shadow:inset 2px 2px 0 rgba(255,255,255,0.1),inset -2px -2px 0 rgba(0,0,0,0.4); animation: bob 3s ease-in-out infinite; }
+    @keyframes bob { 0%,100%{transform:translateY(0) rotate(-4deg)} 50%{transform:translateY(-10px) rotate(4deg)} }
+    .map-title { font-size: 16px; margin-bottom: 14px; color: var(--mc-yell); text-shadow: 2px 2px 0 #7a4f00; }
+    .map-desc  { font-size: 8px; color: #777; line-height: 2.2; margin-bottom: 28px; }
+
+    /* =====================
+       LOADING SCREEN
+    ===================== */
+    #loader {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--mc-dark);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 24px;
+      transition: opacity 0.6s ease, visibility 0.6s;
+    }
+    #loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .loader-title {
+      font-size: clamp(24px,5vw,44px);
+      color: var(--mc-yell);
+      text-shadow: 3px 3px 0 #7a4f00, 5px 5px 0 rgba(0,0,0,0.5);
+      letter-spacing: 6px;
+      animation: loaderPulse 1s ease-in-out infinite alternate;
+    }
+    @keyframes loaderPulse {
+      from { opacity: 0.7; }
+      to   { opacity: 1; }
+    }
+    .loader-bar-wrap {
+      width: 280px;
+      background: #1a1a1a;
+      border: 3px solid;
+      border-color: #5a5a5a #1a1a1a #1a1a1a #5a5a5a;
+      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.08), inset -2px -2px 0 rgba(0,0,0,0.4);
+      height: 22px;
+      padding: 3px;
+    }
+    .loader-bar-inner {
+      height: 100%;
+      background: #2d6e1a;
+      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.2), inset -2px -2px 0 rgba(0,0,0,0.4);
+      width: 0%;
+      transition: width 0.08s linear;
+    }
+    .loader-txt {
+      font-size: 8px;
+      color: #777;
+      letter-spacing: 1px;
+    }
+
+    /* =====================
+       ENTER ANIMATIONS
+    ===================== */
+    .anim-up {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.55s cubic-bezier(.22,1,.36,1),
+                  transform 0.55s cubic-bezier(.22,1,.36,1);
+    }
+    .anim-up.in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* =====================
+       FOOTER
+    ===================== */
+    .footer-blocks {
+      width: 100%;
+      height: 32px;
+      display: flex;
+      overflow: hidden;
+    }
+    footer {
+      background: #111;
+      border-top: 3px solid #222;
+      text-align: center;
+      padding: 18px;
+      font-size: 7px;
+      color: #444;
+      letter-spacing: 1px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #111; }
+    ::-webkit-scrollbar-thumb { background: #444; }
+    ::-webkit-scrollbar-thumb:hover { background: #666; }
+  </style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-title">ETERIS</div>
+  <div class="loader-bar-wrap"><div class="loader-bar-inner" id="lbar"></div></div>
+  <div class="loader-txt" id="ltxt">Loading world...</div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    ETERIS
+  </div>
+  <div class="nav-links">
+    <a class="nav-a" href="#hero">Home</a>
+    <a class="nav-a" href="#gallery-sec">Gallery</a>
+    <a class="nav-a" href="#map-sec">Map</a>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section id="hero">
+
+  <!-- Stars -->
+  <div class="stars" id="stars"></div>
+  <!-- Sun -->
+  <div class="sun"></div>
+  <!-- Terrain -->
+  <canvas id="terrain-canvas"></canvas>
+
+  <div class="hero-inner">
+    <div class="server-title anim-up">ETERIS</div>
+    <div class="server-sub anim-up">Minecraft Java Edition Server</div>
+
+    <div class="hero-cards anim-up">
+
+      <!-- Status -->
+      <div class="hero-card mc-panel">
+        <div class="card-title">▶ SERVER STATUS</div>
+        <div class="s-row">
+          <div class="s-dot" id="s-dot"></div>
+          <span class="s-label" id="s-txt">Checking...</span>
+          <span class="s-ver" id="s-ver"></span>
+        </div>
+        <div class="s-meta" id="s-meta">Players: —</div>
+        <div class="s-motd" id="s-motd"></div>
+      </div>
+
+      <!-- Connect -->
+      <div class="hero-card mc-panel">
+        <div class="card-title">▶ CONNECT</div>
+        <div class="ip-box">Eteris.hsrv.pl</div>
+        <div class="btn-col">
+          <button class="mc-btn green wide" onclick="copyIP()">Copy IP</button>
+          <button class="mc-btn stone wide" onclick="mapToast()">View Map</button>
+        </div>
+        <div class="toast" id="copy-toast">✔ IP copied to clipboard!</div>
+        <div class="toast" id="map-toast">Map is not available yet</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Block divider -->
+<div class="block-divider" id="div1"></div>
+
+<!-- ═══ GALLERY ═══ -->
+<section id="gallery-sec">
+  <div class="content-section">
+    <div class="section-heading">Gallery</div>
+    <div class="section-sub">Share your best moments from the server</div>
+
+    <!-- Upload -->
+    <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-in').click()">
+      <input type="file" id="file-in" accept="image/*" multiple />
+      <div class="upload-icon"></div>
+      <div class="upload-txt">
+        Click or drag & drop your screenshot here<br>
+        PNG · JPG · WEBP · max 10 MB
+      </div>
+    </div>
+
+    <div class="preview-row" id="prev-row"></div>
+    <div class="up-actions" id="up-actions">
+      <button class="mc-btn green" onclick="doUpload()">Upload</button>
+      <span class="up-status" id="up-status"></span>
+    </div>
+
+    <!-- Grid -->
+    <div class="gallery-grid" id="g-grid">
+      <div class="g-loading">Loading screenshots...</div>
+    </div>
+  </div>
+</section>
+
+<!-- Block divider -->
+<div class="block-divider" id="div2"></div>
+
+<!-- ═══ MAP ═══ -->
+<section id="map-sec">
+  <div class="content-section">
+    <div class="map-inner mc-panel" style="max-width:480px;margin:0 auto;">
+      <div class="map-icon"></div>
+      <div class="map-title">MAP COMING SOON</div>
+      <div class="map-desc">
+        We're building an interactive live<br>
+        map of the Eteris world.<br><br>
+        Stay tuned — it's going to be epic.
+      </div>
+      <a class="mc-btn stone" href="#hero">Back to Top</a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer blocks + footer -->
+<div class="footer-blocks" id="footer-blocks"></div>
+<footer>Eteris · Minecraft Java Edition Server · Eteris.hsrv.pl</footer>
+
+<!-- Lightbox -->
+<div id="lb">
+  <button class="mc-btn" id="lb-close" onclick="closeLB()">✕ Close</button>
+  <img id="lb-img" src="" alt="" />
+</div>
+
+<script>
+// ─── SUPABASE ───
+const sb = supabase.createClient(
+  'https://jczxgcbxqnnhlafvekul.supabase.co',
+  'sb_publishable_ZsL8foOFNJYOa3FW4YoKdw_-gJCnZ5P'
+);
+
+// ─── STARS ───
+(function(){
+  const el = document.getElementById('stars');
+  for(let i=0;i<70;i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random()<0.2 ? 3 : 2;
+    s.style.cssText = `width:${sz}px;height:${sz}px;top:${Math.random()*60}%;left:${Math.random()*100}%;opacity:${0.3+Math.random()*0.7};`;
+    el.appendChild(s);
+  }
+})();
+
+// ─── TERRAIN CANVAS ───
+(function(){
+  const canvas = document.getElementById('terrain-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function render(){
+    canvas.width  = window.innerWidth;
+    canvas.height = 240;
+    const W = canvas.width, H = canvas.height;
+    const BS = 32;
+    const cols = Math.ceil(W/BS) + 2;
+
+    // deterministic height using sin waves for smooth hills
+    function colH(i){
+      const v = Math.sin(i*0.18)*1.4 + Math.sin(i*0.07)*1.1 + 3.2;
+      return Math.max(2, Math.min(6, Math.round(v)));
+    }
+
+    ctx.clearRect(0,0,W,H);
+
+    for(let i=0;i<cols;i++){
+      const x = i*BS;
+      const h = colH(i);
+      const top = H - h*BS;
+
+      // Grass top
+      ctx.fillStyle = '#4e8a1e'; ctx.fillRect(x, top, BS, BS);
+      ctx.fillStyle = '#61aa28'; ctx.fillRect(x, top, BS, 7);
+      ctx.fillStyle = '#3a6b12'; ctx.fillRect(x, top+7, BS, 3);
+      // Highlight / shadow
+      ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x, top, 2, BS);
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';       ctx.fillRect(x+BS-2, top, 2, BS);
+      // Grid line
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 0.5;
+      ctx.strokeRect(x, top, BS, BS);
+
+      // Dirt below
+      for(let j=1;j<h;j++){
+        const y = top + j*BS;
+        ctx.fillStyle = j===1 ? '#7a5030' : '#6a431e';
+        ctx.fillRect(x, y, BS, BS);
+        // subtle texture spots
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.fillRect(x+9,  y+9,  4, 4);
+        ctx.fillRect(x+20, y+20, 3, 3);
+        ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(x, y, 2, BS);
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';       ctx.fillRect(x+BS-2, y, 2, BS);
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 0.5;
+        ctx.strokeRect(x, y, BS, BS);
+      }
+    }
+
+    // Trees
+    for(let i=2;i<cols-2;i++){
+      if((i%6===0 || i%9===0) && Math.abs(Math.sin(i*0.18))>0.05){
+        const x = i*BS;
+        const h = colH(i);
+        const top = H - h*BS;
+        const tH = 32 + (i%3)*12;
+        const lS = 40 + (i%4)*8;
+        const tx = x + BS/2 - 8;
+        // trunk
+        ctx.fillStyle = '#6b4c2a';
+        ctx.fillRect(tx+4, top-tH, 8, tH);
+        ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(tx+4, top-tH, 2, tH);
+        ctx.fillStyle='rgba(0,0,0,0.25)';       ctx.fillRect(tx+10, top-tH, 2, tH);
+        // leaves layers
+        ctx.fillStyle = '#236e12'; ctx.fillRect(tx+8-lS/2, top-tH-lS*0.55, lS, lS*0.65);
+        ctx.fillStyle = '#2d8e18'; ctx.fillRect(tx+8-lS/2+5, top-tH-lS*0.85, lS-10, lS*0.45);
+        ctx.fillStyle = '#1e5a0e'; ctx.fillRect(tx+8-lS/2, top-tH-lS*0.55, lS, 3);
+      }
+    }
+
+    // Fog at top to blend sky
+    const fog = ctx.createLinearGradient(0,0,0,H*0.35);
+    fog.addColorStop(0, 'rgba(13,17,23,0)');
+    fog.addColorStop(1, 'rgba(13,17,23,0)');
+    ctx.fillStyle = fog; ctx.fillRect(0,0,W,H*0.35);
+  }
+
+  window.addEventListener('resize', render);
+  render();
+})();
+
+// ─── BLOCK DIVIDERS & FOOTER ───
+(function(){
+  const palette = [
+    ['#5d9e32','#4e8a1e','#61aa28'],  // grass
+    ['#7a5030','#6a431e','#8a6040'],  // dirt
+    ['#828282','#6e6e6e','#919191'],  // stone
+    ['#c6a95c','#b0943a','#d4b870'],  // wood planks
+  ];
+  function fill(id, rowPalette){
+    const el = document.getElementById(id);
+    if(!el) return;
+    const n = Math.ceil(window.innerWidth/32)+2;
+    el.innerHTML = '';
+    for(let i=0;i<n;i++){
+      const d = document.createElement('div');
+      d.className = 'bd-block';
+      d.style.background = rowPalette[i%rowPalette.length];
+      el.appendChild(d);
+    }
+  }
+  function build(){
+    fill('div1', palette[0]);
+    fill('div2', palette[2]);
+    fill('footer-blocks', palette[1]);
+  }
+  window.addEventListener('resize', build);
+  build();
+})();
+
+// ─── STATUS ───
+async function fetchStatus(){
+  try{
+    const r = await fetch('https://api.mcstatus.io/v2/status/java/eteris.hsrv.pl:25679');
+    const d = await r.json();
+    const dot  = document.getElementById('s-dot');
+    const txt  = document.getElementById('s-txt');
+    const ver  = document.getElementById('s-ver');
+    const meta = document.getElementById('s-meta');
+    const motd = document.getElementById('s-motd');
+    if(d.online){
+      dot.className = 's-dot on';
+      txt.textContent = 'ONLINE';
+      txt.style.color = 'var(--mc-green)';
+      ver.textContent = d.version?.name_clean || '';
+      const on=d.players?.online??0, mx=d.players?.max??0;
+      meta.textContent = `Players: ${on} / ${mx}`;
+      if(d.motd?.clean){ motd.textContent=d.motd.clean; motd.style.display='block'; }
+    } else {
+      dot.className = 's-dot off';
+      txt.textContent = 'OFFLINE';
+      txt.style.color = 'var(--mc-red)';
+      meta.textContent = 'Players: —';
+    }
+  } catch(e){
+    document.getElementById('s-txt').textContent = 'Unavailable';
+  }
+}
+
+// ─── COPY IP ───
+function copyIP(){
+  navigator.clipboard.writeText('eteris.hsrv.pl');
+  showToast('copy-toast');
+}
+
+// ─── MAP TOAST ───
+function mapToast(){
+  showToast('map-toast');
+}
+
+function showToast(id){
+  // hide all toasts in same parent first
+  const el = document.getElementById(id);
+  const siblings = el.parentElement.querySelectorAll('.toast');
+  siblings.forEach(t => t.classList.remove('show'));
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ─── GALLERY UPLOAD ───
+let staged = [];
+const dz   = document.getElementById('drop-zone');
+const finp = document.getElementById('file-in');
+const prevRow  = document.getElementById('prev-row');
+const upActs   = document.getElementById('up-actions');
+
+finp.addEventListener('change', e => stage(e.target.files));
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop',      e => { e.preventDefault(); dz.classList.remove('drag'); stage(e.dataTransfer.files); });
+
+function stage(files){
+  staged = [...staged, ...Array.from(files)];
+  prevRow.innerHTML = '';
+  staged.forEach(f => {
+    const img = document.createElement('img');
+    img.className = 'prev-img';
+    img.src = URL.createObjectURL(f);
+    prevRow.appendChild(img);
+  });
+  upActs.style.display = staged.length ? 'flex' : 'none';
+}
+
+async function doUpload(){
+  if(!staged.length) return;
+  const st = document.getElementById('up-status');
+  st.textContent = 'Uploading...';
+  let ok=0;
+  for(const f of staged){
+    const name = `${Date.now()}_${Math.random().toString(36).slice(2)}_${f.name}`;
+    const {error} = await sb.storage.from('screenshots').upload(name, f, {contentType: f.type});
+    if(!error) ok++;
+  }
+  st.textContent = `✔ Uploaded ${ok}/${staged.length}`;
+  staged=[]; prevRow.innerHTML=''; finp.value=''; upActs.style.display='none';
+  setTimeout(()=>{ st.textContent=''; }, 3000);
+  loadGallery();
+}
+
+// ─── GALLERY LOAD ───
+async function loadGallery(){
+  const grid = document.getElementById('g-grid');
+  grid.innerHTML = '<div class="g-loading">Loading screenshots...</div>';
+  const {data,error} = await sb.storage.from('screenshots').list('',{
+    limit:100, sortBy:{column:'created_at',order:'desc'}
+  });
+  if(error||!data?.length){
+    grid.innerHTML='<div class="g-empty">No screenshots yet.<br>Be the first to share one!</div>';
+    return;
+  }
+  grid.innerHTML='';
+  for(const file of data){
+    if(!file.name) continue;
+    const {data:u} = sb.storage.from('screenshots').getPublicUrl(file.name);
+    if(!u?.publicUrl) continue;
+    const card = document.createElement('div');
+    card.className = 'g-item';
+    card.onclick = ()=>{ document.getElementById('lb-img').src=u.publicUrl; document.getElementById('lb').classList.add('open'); };
+    const date = file.created_at ? new Date(file.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+    const clean = file.name.replace(/^\d+_[a-z0-9]+_/,'');
+    card.innerHTML = `<img src="${u.publicUrl}" alt="" loading="lazy"/><div class="g-caption">${clean} · ${date}</div>`;
+    grid.appendChild(card);
+  }
+}
+
+// ─── LIGHTBOX ───
+function closeLB(){
+  document.getElementById('lb').classList.remove('open');
+  document.getElementById('lb-img').src='';
+}
+document.getElementById('lb').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeLB(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLB(); });
+
+// ─── LOADER ───
+(function(){
+  const bar  = document.getElementById('lbar');
+  const txt  = document.getElementById('ltxt');
+  const msgs = [
+    'Generating terrain...',
+    'Placing blocks...',
+    'Growing trees...',
+    'Spawning mobs...',
+    'Loading chunks...',
+    'Almost there...'
+  ];
+  let pct = 0;
+  const STEP = 100 / 38;
+  let mi = 0;
+  const iv = setInterval(() => {
+    pct = Math.min(100, pct + STEP + Math.random()*STEP*0.6);
+    bar.style.width = pct + '%';
+    const newMi = Math.min(msgs.length-1, Math.floor(pct/(100/msgs.length)));
+    if(newMi !== mi){ mi = newMi; txt.textContent = msgs[mi]; }
+    if(pct >= 100){
+      clearInterval(iv);
+      txt.textContent = 'Done!';
+      setTimeout(() => {
+        document.getElementById('loader').classList.add('hidden');
+        // trigger entrance animations
+        document.querySelectorAll('.anim-up').forEach((el, i) => {
+          setTimeout(() => el.classList.add('in'), i * 120);
+        });
+      }, 350);
+    }
+  }, 55);
+})();
+
+// ─── INIT ───
+fetchStatus();
+setInterval(fetchStatus, 60000);
+loadGallery();
+</script>
+</body>
+</html>
