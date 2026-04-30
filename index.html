@@ -3,591 +3,583 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Eteris</title>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <title>Eteris — Minecraft Server</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --mc-dark:  #1d1d1d;
-      --mc-bg:    #2a2a2a;
-      --mc-bg2:   #222;
-      --mc-panel: #373737;
-      --mc-green: #55ff55;
-      --mc-yell:  #ffff55;
-      --mc-red:   #ff5555;
-      --mc-cyan:  #55ffff;
-      --mc-text:  #fff;
-      --font:     'Press Start 2P', monospace;
+      --bg:        #0a0a0f;
+      --bg-card:   #0f0f1a;
+      --bg-card2:  #12121f;
+      --border:    rgba(255,255,255,0.07);
+      --border-hv: rgba(255,255,255,0.14);
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --muted2:    #475569;
+      --accent:    #4ade80;
+      --accent2:   #22d3ee;
+      --accent3:   #818cf8;
+      --red:       #f87171;
+      --yellow:    #fbbf24;
+      --font:      'Inter', sans-serif;
+      --radius:    10px;
+      --radius-lg: 16px;
     }
 
     html { scroll-behavior: smooth; }
 
     body {
       font-family: var(--font);
-      background: var(--mc-dark);
-      color: var(--mc-text);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
     /* ── SCROLLBAR ── */
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #111; }
-    ::-webkit-scrollbar-thumb { background: #444; border-radius: 0; }
-    ::-webkit-scrollbar-thumb:hover { background: #666; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #1e1e2e; border-radius: 3px; }
 
-    /* ══════════════════════════════
-       MINECRAFT BUTTON
-    ══════════════════════════════ */
-    .mc-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      font-family: var(--font);
-      font-size: 10px;
-      color: var(--mc-text);
-      background: #555;
-      border: none;
-      outline: none;
-      cursor: pointer;
-      padding: 11px 20px;
-      position: relative;
-      user-select: none;
-      text-decoration: none;
-      text-shadow: 1px 1px 0 rgba(0,0,0,0.6);
-      box-shadow:
-        inset  2px  2px 0 rgba(255,255,255,0.22),
-        inset -2px -2px 0 rgba(0,0,0,0.5),
-        3px 3px 0 rgba(0,0,0,0.5);
-      transition: filter 0.1s, color 0.1s;
-      letter-spacing: 0.5px;
-    }
-    .mc-btn:hover {
-      filter: brightness(1.3);
-      color: var(--mc-yell);
-      text-shadow: 1px 1px 0 rgba(80,60,0,0.8);
-    }
-    .mc-btn:active {
-      box-shadow:
-        inset  2px  2px 0 rgba(0,0,0,0.4),
-        inset -2px -2px 0 rgba(255,255,255,0.1),
-        1px 1px 0 rgba(0,0,0,0.5);
-      transform: translate(1px,1px);
-    }
-    .mc-btn.green  { background: #2d6e1a; }
-    .mc-btn.stone  { background: #6a6a6a; }
-    .mc-btn.red    { background: #8b1a1a; }
-    .mc-btn.wide   { width: 100%; }
-    .mc-btn.sm     { font-size: 8px; padding: 8px 14px; }
-
-    /* ══════════════════════════════
-       MC PANEL
-    ══════════════════════════════ */
-    .mc-panel {
-      background: var(--mc-bg);
-      border: 3px solid;
-      border-color: #5a5a5a #1a1a1a #1a1a1a #5a5a5a;
-      box-shadow:
-        inset  2px  2px 0 rgba(255,255,255,0.1),
-        inset -2px -2px 0 rgba(0,0,0,0.4),
-        4px 4px 0 rgba(0,0,0,0.5);
-      padding: 22px 24px;
+    /* ── NOISE GRAIN ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      opacity: .4;
     }
 
-    /* ══════════════════════════════
-       MC INPUT
-    ══════════════════════════════ */
-    .mc-input {
-      width: 100%;
-      font-family: var(--font);
-      font-size: 9px;
-      color: var(--mc-text);
-      background: #111;
-      border: 2px solid;
-      border-color: #1a1a1a #5a5a5a #5a5a5a #1a1a1a;
-      box-shadow: inset 2px 2px 0 rgba(0,0,0,0.4);
-      padding: 10px 12px;
-      outline: none;
-      caret-color: var(--mc-text);
+    /* ── GLOW ORBS ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: .18;
     }
-    .mc-input:focus {
-      border-color: #aaa #333 #333 #aaa;
-      box-shadow: inset 2px 2px 0 rgba(0,0,0,0.3), 0 0 0 2px rgba(255,255,255,0.06);
-    }
-    .mc-input::placeholder { color: #555; }
-    textarea.mc-input { resize: vertical; min-height: 80px; line-height: 1.8; }
+    .orb-1 { width: 600px; height: 600px; background: #4ade80; top: -200px; left: -100px; }
+    .orb-2 { width: 500px; height: 500px; background: #818cf8; bottom: 20%; right: -150px; }
+    .orb-3 { width: 400px; height: 400px; background: #22d3ee; top: 40%; left: 50%; transform: translateX(-50%); opacity: .08; }
 
-    /* ══════════════════════════════
-       LOADING SCREEN
-    ══════════════════════════════ */
-    #loader {
-      position: fixed; inset: 0; z-index: 9999;
-      background: var(--mc-dark);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 20px;
-      transition: opacity 0.7s ease, visibility 0.7s;
-    }
-    #loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-
-    .loader-logo {
-      font-size: clamp(28px, 5vw, 46px);
-      color: var(--mc-yell);
-      text-shadow: 3px 3px 0 #7a4f00, 5px 5px 0 rgba(0,0,0,0.5);
-      letter-spacing: 6px;
-      animation: loaderPulse 1s ease-in-out infinite alternate;
-    }
-    @keyframes loaderPulse { from { opacity:.65 } to { opacity:1 } }
-
-    .loader-bar-wrap {
-      width: 300px;
-      background: #111;
-      border: 3px solid;
-      border-color: #5a5a5a #1a1a1a #1a1a1a #5a5a5a;
-      box-shadow: inset 2px 2px 0 rgba(0,0,0,0.4);
-      height: 22px;
-      padding: 3px;
-    }
-    .loader-bar {
-      height: 100%;
-      background: #2d6e1a;
-      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.2), inset -2px -2px 0 rgba(0,0,0,0.4);
-      width: 0%;
-      transition: width 0.06s linear;
-    }
-    .loader-msg { font-size: 8px; color: #666; letter-spacing: 1px; min-height: 14px; }
-
-    /* ══════════════════════════════
-       ENTRANCE ANIMATIONS
-    ══════════════════════════════ */
-    .fade-up {
-      opacity: 0;
-      transform: translateY(28px);
-      transition: opacity .6s cubic-bezier(.22,1,.36,1),
-                  transform .6s cubic-bezier(.22,1,.36,1);
-    }
-    .fade-up.in { opacity: 1; transform: translateY(0); }
-
-    /* ══════════════════════════════
+    /* ════════════════════════
        NAV
-    ══════════════════════════════ */
+    ════════════════════════ */
     nav {
-      position: sticky; top: 0; z-index: 200;
-      background: rgba(18,18,18,0.97);
-      border-bottom: 3px solid #111;
-      box-shadow: 0 2px 0 rgba(255,255,255,0.04);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 36px;
-      height: 52px;
-      backdrop-filter: blur(10px);
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 max(24px, calc((100vw - 1200px)/2));
+      background: rgba(10,10,15,0.7);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px) saturate(1.5);
+      -webkit-backdrop-filter: blur(20px) saturate(1.5);
     }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
     .nav-logo {
-      font-size: 13px;
-      color: #888;
-      letter-spacing: 2px;
-    }
-    .nav-links { display: flex; gap: 4px; }
-    .nav-a {
-      font-family: var(--font);
-      font-size: 8px;
-      color: #777;
-      background: none; border: none;
-      cursor: pointer;
-      padding: 8px 12px;
+      font-size: 15px; font-weight: 700;
+      color: var(--text); letter-spacing: .5px;
       text-decoration: none;
-      transition: color 0.1s;
-      display: block;
     }
-    .nav-a:hover { color: var(--mc-yell); }
+    .nav-logo span { color: var(--accent); }
+    .nav-links { display: flex; align-items: center; gap: 4px; }
+    .nav-a {
+      font-size: 14px; font-weight: 500; color: var(--muted);
+      background: none; border: none; cursor: pointer;
+      padding: 7px 14px; border-radius: 8px;
+      text-decoration: none; display: block;
+      transition: color .15s, background .15s;
+    }
+    .nav-a:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .nav-a.active { color: var(--text); }
 
-    /* ══════════════════════════════
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-family: var(--font); font-size: 14px; font-weight: 600;
+      padding: 10px 22px; border-radius: var(--radius);
+      border: none; cursor: pointer; text-decoration: none;
+      transition: opacity .15s, transform .1s, box-shadow .15s;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary {
+      background: var(--accent); color: #000;
+      box-shadow: 0 0 0 0 rgba(74,222,128,0);
+    }
+    .btn-primary:hover { opacity: .9; box-shadow: 0 0 24px rgba(74,222,128,.3); }
+    .btn-ghost {
+      background: rgba(255,255,255,.06); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,.1); border-color: var(--border-hv); }
+    .btn-sm { font-size: 13px; padding: 8px 16px; }
+    .btn-xs { font-size: 12px; padding: 6px 12px; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .card:hover { border-color: var(--border-hv); }
+
+    /* ════════════════════════
        HERO
-    ══════════════════════════════ */
+    ════════════════════════ */
     #hero {
       position: relative;
       min-height: 100vh;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px max(24px, calc((100vw - 1200px)/2)) 80px;
       overflow: hidden;
-      padding-bottom: 200px;
-    }
-    #hero::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(180deg,
-        #14263e 0%, #1b3d62 30%,
-        #2a6090 55%, #6baed6 75%,
-        #a8cfe8 88%, #c9e4f5 100%);
-      z-index: 0;
-    }
-    #hero::after {
-      content: '';
-      position: absolute; bottom: 0; left: 0; right: 0;
-      height: 100px;
-      background: linear-gradient(transparent, var(--mc-dark));
-      z-index: 2;
     }
 
-    /* Stars */
-    .stars { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-    .star  { position: absolute; background: #fff; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(74,222,128,.08);
+      border: 1px solid rgba(74,222,128,.2);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 13px; font-weight: 500; color: var(--accent);
+      margin-bottom: 32px;
+      opacity: 0; animation: fadeUp .6s .1s forwards;
+    }
+    .badge-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent);
+      animation: pulseDot 2s ease-in-out infinite;
+    }
+    @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    /* Sun */
-    .sun {
-      position: absolute; top: 7%; right: 9%; z-index: 1;
-      width: 52px; height: 52px;
-      background: #ffff55;
-      box-shadow: 0 0 0 4px #ffff55, 0 0 28px 10px rgba(255,255,85,0.35);
-    }
-
-    #terrain-canvas {
-      position: absolute; bottom: 0; left: 0;
-      width: 100%; height: 250px; z-index: 1;
-    }
-
-    .hero-inner {
-      position: relative; z-index: 3;
-      display: flex; flex-direction: column;
-      align-items: center; text-align: center;
-      margin-top: -50px;
-    }
-
-    .server-title {
-      font-size: clamp(32px, 6vw, 56px);
-      color: var(--mc-yell);
-      text-shadow: 3px 3px 0 #7a4f00, 5px 5px 0 rgba(0,0,0,0.5);
-      letter-spacing: 6px;
-      margin-bottom: 12px;
-      animation: titleFloat 4s ease-in-out infinite;
-    }
-    @keyframes titleFloat {
-      0%,100% { transform: translateY(0); }
-      50%      { transform: translateY(-8px); }
-    }
-    .server-sub {
-      font-size: 8px; color: rgba(255,255,255,0.5);
-      letter-spacing: 3px; margin-bottom: 44px;
+    .hero-title {
+      font-size: clamp(48px, 8vw, 88px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -2px;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      opacity: 0; animation: fadeUp .7s .2s forwards;
     }
 
-    /* ── HERO CARDS ── */
+    .hero-sub {
+      font-size: clamp(15px, 2vw, 18px);
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 520px;
+      margin: 0 auto 40px;
+      opacity: 0; animation: fadeUp .7s .35s forwards;
+    }
+
+    .hero-actions {
+      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+      margin-bottom: 72px;
+      opacity: 0; animation: fadeUp .7s .45s forwards;
+    }
+
+    /* ── STATUS + CONNECT CARDS ── */
     .hero-cards {
-      display: flex; gap: 16px; flex-wrap: wrap;
-      justify-content: center;
-      width: 100%; max-width: 780px;
+      display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+      width: 100%; max-width: 800px;
+      opacity: 0; animation: fadeUp .7s .55s forwards;
     }
-    .hero-card { flex: 1; min-width: 280px; max-width: 370px; }
 
-    .card-title {
-      font-size: 8px; color: #666;
-      letter-spacing: 1px; margin-bottom: 14px;
+    .hero-card {
+      flex: 1; min-width: 280px; max-width: 380px;
+      padding: 24px 26px;
+    }
+
+    .card-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--muted2);
+      margin-bottom: 16px;
     }
 
     /* Status */
-    .s-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .s-dot {
-      width: 12px; height: 12px; flex-shrink: 0; background: #555;
+    .status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted2); flex-shrink: 0;
       transition: background .3s, box-shadow .3s;
     }
-    .s-dot.on  { background: var(--mc-green); box-shadow: 0 0 8px var(--mc-green); }
-    .s-dot.off { background: var(--mc-red); }
-    .s-label { font-size: 11px; }
-    .s-ver   { font-size: 8px; color: #666; margin-left: auto; }
-    .s-meta  { font-size: 8px; color: #666; }
-    .s-motd  {
-      font-size: 8px; color: var(--mc-yell);
-      border-top: 2px solid #333;
-      padding-top: 10px; margin-top: 10px;
-      line-height: 2; display: none;
+    .status-dot.on  { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulseDot 2s infinite; }
+    .status-dot.off { background: var(--red); }
+    .status-name { font-size: 15px; font-weight: 600; }
+    .status-ver  { font-size: 12px; color: var(--muted); margin-left: auto; }
+    .status-meta { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+    .status-motd {
+      font-size: 12px; color: var(--accent);
+      border-top: 1px solid var(--border);
+      padding-top: 12px; margin-top: 12px;
+      line-height: 1.8; display: none; font-style: italic;
     }
 
-    /* Connect */
-    .ip-box {
-      font-size: 11px; color: var(--mc-yell);
-      text-shadow: 1px 1px 0 #5a4000;
-      background: #111;
-      border: 2px solid; border-color: #1a1a1a #5a5a5a #5a5a5a #1a1a1a;
-      box-shadow: inset 2px 2px 0 rgba(0,0,0,0.4);
-      padding: 12px; text-align: center;
-      letter-spacing: 2px; margin-bottom: 14px;
+    /* IP */
+    .ip-display {
+      font-size: 15px; font-weight: 700; color: var(--text);
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px; text-align: center;
+      letter-spacing: 1px; margin-bottom: 14px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
     }
     .btn-col { display: flex; flex-direction: column; gap: 8px; }
+    .btn.wide { width: 100%; }
 
-    /* Toasts */
-    .toast {
-      font-size: 8px; color: var(--mc-green);
-      text-align: center; min-height: 14px;
-      opacity: 0; transition: opacity .25s; margin-top: 6px;
-    }
-    .toast.show { opacity: 1; }
-    .toast.warn { color: var(--mc-yell); }
+    /* Toast */
+    .toast-area { display: none; }
 
-    /* ══════════════════════════════
-       BLOCK DIVIDERS
-    ══════════════════════════════ */
-    .blk-row {
-      width: 100%; height: 32px; display: flex; overflow: hidden;
+    /* Snackbar */
+    .snackbar {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(20,20,28,0.95);
+      border: 1px solid var(--border-hv);
+      border-radius: 100px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s cubic-bezier(.22,1,.36,1),
+                  transform .25s cubic-bezier(.22,1,.36,1);
+      white-space: nowrap;
     }
-    .blk-cell { width: 32px; height: 32px; flex-shrink: 0; }
+    .snackbar.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .snackbar-icon {
+      width: 18px; height: 18px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .snackbar-icon svg { width: 10px; height: 10px; stroke: #000; fill: none; stroke-width: 3; }
+    .snackbar.warn .snackbar-icon { background: var(--yellow); }
 
-    /* ══════════════════════════════
-       CONTENT WRAPPER
-    ══════════════════════════════ */
-    .content-wrap {
-      padding: 60px 36px;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-    .sec-title {
-      font-size: 14px; color: var(--mc-text);
-      text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
-      margin-bottom: 6px;
-    }
-    .sec-sub {
-      font-size: 8px; color: #666;
-      margin-bottom: 32px; letter-spacing: 1px;
-    }
-
-    /* ══════════════════════════════
-       NEWS SECTION
-    ══════════════════════════════ */
-    .news-list { display: flex; flex-direction: column; gap: 14px; }
-
-    .news-card {
-      background: var(--mc-bg);
-      border: 3px solid; border-color: #4a4a4a #1a1a1a #1a1a1a #4a4a4a;
-      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.07),
-                  inset -2px -2px 0 rgba(0,0,0,0.35),
-                  3px 3px 0 rgba(0,0,0,0.4);
-      padding: 18px 20px;
-      position: relative;
-      animation: cardIn .4s cubic-bezier(.22,1,.36,1) both;
-    }
-    @keyframes cardIn {
-      from { opacity:0; transform:translateY(16px); }
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(20px); }
       to   { opacity:1; transform:translateY(0); }
     }
 
-    .news-card-header {
-      display: flex; align-items: flex-start;
-      justify-content: space-between; gap: 12px;
-      margin-bottom: 10px;
+    /* ── GRADIENT DIVIDER ── */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-hv), transparent);
+      margin: 0;
     }
+
+    /* ════════════════════════
+       SECTIONS
+    ════════════════════════ */
+    .section {
+      position: relative; z-index: 1;
+      padding: 96px max(24px, calc((100vw - 1200px)/2));
+    }
+
+    .section-label {
+      font-size: 12px; font-weight: 600; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: 12px; display: block;
+    }
+    .section-title {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 800; letter-spacing: -1px;
+      margin-bottom: 8px; line-height: 1.15;
+    }
+    .section-title .grad {
+      background: linear-gradient(135deg, #fff 30%, #94a3b8 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .section-sub {
+      font-size: 15px; color: var(--muted);
+      margin-bottom: 48px; line-height: 1.7;
+    }
+
+    /* ════════════════════════
+       NEWS
+    ════════════════════════ */
+    .news-grid { display: flex; flex-direction: column; gap: 12px; }
+
+    .news-card {
+      padding: 24px 28px;
+      display: flex; flex-direction: column; gap: 10px;
+      position: relative;
+      transition: border-color .2s, transform .2s;
+    }
+    .news-card:hover { transform: translateX(4px); border-color: var(--border-hv); }
+
+    .news-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .news-tag {
-      font-size: 7px; color: var(--mc-green);
-      text-shadow: 1px 1px 0 #1a5e1a;
-      letter-spacing: 1px;
+      font-size: 11px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(74,222,128,.1);
+      border: 1px solid rgba(74,222,128,.2);
+      border-radius: 100px; padding: 2px 10px;
     }
-    .news-date { font-size: 7px; color: #555; white-space: nowrap; }
-    .news-title {
-      font-size: 10px; color: var(--mc-text);
-      text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
-      margin-bottom: 8px; line-height: 1.8;
-    }
-    .news-body {
-      font-size: 8px; color: #999; line-height: 2;
-    }
-    .news-del-btn {
-      position: absolute; top: 12px; right: 12px;
+    .news-date { font-size: 12px; color: var(--muted); }
+    .news-title { font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.5; }
+    .news-body  { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+    .news-del {
       display: none;
+      position: absolute; top: 20px; right: 20px;
     }
-    body.secure .news-del-btn { display: inline-flex; }
+    body.secure .news-del { display: inline-flex; }
+
+    /* Post form */
+    .news-form-wrap {
+      display: none;
+      margin-bottom: 32px;
+    }
+    body.secure .news-form-wrap { display: block; }
+    .news-form {
+      padding: 28px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 6px; letter-spacing: .5px; }
+    .form-input {
+      width: 100%;
+      font-family: var(--font); font-size: 14px; color: var(--text);
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 11px 14px; outline: none;
+      transition: border-color .15s, box-shadow .15s;
+      caret-color: var(--accent);
+    }
+    .form-input:focus { border-color: rgba(74,222,128,.4); box-shadow: 0 0 0 3px rgba(74,222,128,.07); }
+    .form-input::placeholder { color: var(--muted2); }
+    textarea.form-input { resize: vertical; min-height: 90px; line-height: 1.7; }
+    .form-row-actions { display: flex; align-items: center; gap: 12px; }
+    .form-status { font-size: 13px; color: var(--accent); }
 
     .news-empty {
-      font-size: 9px; color: #555;
-      text-align: center; padding: 40px 0;
-      line-height: 2.5;
+      text-align: center; padding: 60px 20px;
+      font-size: 14px; color: var(--muted); line-height: 2;
     }
 
-    /* Post form (admin) */
-    .news-form {
-      background: var(--mc-bg2);
-      border: 3px solid; border-color: #5a5a5a #1a1a1a #1a1a1a #5a5a5a;
-      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.07), 4px 4px 0 rgba(0,0,0,0.4);
-      padding: 20px;
-      margin-bottom: 28px;
-      display: none;
-    }
-    body.secure .news-form { display: block; }
-
-    .form-row { margin-bottom: 12px; }
-    .form-label { font-size: 7px; color: #666; letter-spacing: 1px; margin-bottom: 6px; display: block; }
-
-    /* ══════════════════════════════
+    /* ════════════════════════
        GALLERY
-    ══════════════════════════════ */
-    .upload-area {
-      border: 3px dashed #3a3a3a;
-      padding: 40px 24px; text-align: center;
+    ════════════════════════ */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-lg);
+      padding: 48px 32px; text-align: center;
       cursor: pointer;
       transition: border-color .2s, background .2s;
-      background: rgba(0,0,0,0.2);
-      margin-bottom: 24px;
+      background: rgba(255,255,255,.02);
+      margin-bottom: 28px;
     }
-    .upload-area:hover, .upload-area.drag {
-      border-color: var(--mc-green);
-      background: rgba(85,255,85,0.04);
+    .upload-zone:hover, .upload-zone.drag {
+      border-color: rgba(74,222,128,.4);
+      background: rgba(74,222,128,.03);
     }
-    .upload-area input { display: none; }
-    .upload-title { font-size: 9px; color: #888; margin-bottom: 6px; }
-    .upload-sub   { font-size: 7px; color: #555; line-height: 2.2; }
+    .upload-zone input { display: none; }
+    .upload-icon {
+      width: 52px; height: 52px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .upload-icon svg { width: 22px; height: 22px; stroke: var(--muted); fill: none; stroke-width: 1.5; }
+    .upload-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .upload-hint  { font-size: 13px; color: var(--muted); }
 
-    .prev-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-    .prev-img { width: 72px; height: 72px; object-fit: cover; border: 2px solid #444; }
+    .prev-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .prev-img   { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
 
-    .up-actions { display: none; align-items: center; gap: 12px; margin-bottom: 6px; }
-    .up-status  { font-size: 8px; color: var(--mc-green); }
+    .up-bar { display: none; align-items: center; gap: 14px; margin-bottom: 8px; }
+    .up-status { font-size: 13px; color: var(--accent); }
 
     .gallery-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
     }
-    .g-item {
-      border: 3px solid #333;
-      background: #111;
-      cursor: pointer;
-      box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
-      transition: border-color .15s, transform .2s;
-      position: relative;
+    .g-card {
+      overflow: hidden; cursor: pointer;
+      transition: border-color .2s, transform .2s, box-shadow .2s;
     }
-    .g-item:hover { border-color: #888; transform: translateY(-3px); }
-    .g-item img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
-    .g-caption {
-      padding: 8px 10px; font-size: 7px; color: #666;
-      background: #1a1a1a;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      display: flex; align-items: center; justify-content: space-between;
+    .g-card:hover { border-color: var(--border-hv); transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,.4); }
+    .g-card img   { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+    .g-info {
+      padding: 12px 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
     }
-    .g-del {
-      display: none;
-      font-family: var(--font); font-size: 7px;
-      color: var(--mc-red); background: none; border: none;
-      cursor: pointer; padding: 2px 4px; flex-shrink: 0;
-      transition: opacity .15s;
-    }
+    .g-name { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+    .g-del  { display: none; color: var(--red); background: none; border: none; cursor: pointer; font-size: 12px; font-family: var(--font); transition: opacity .15s; flex-shrink: 0; }
     .g-del:hover { opacity: .7; }
     body.secure .g-del { display: inline-block; }
-
     .g-empty, .g-loading {
       grid-column: 1/-1; text-align: center;
-      padding: 60px; font-size: 9px; color: #555; line-height: 2.5;
+      padding: 80px 20px; font-size: 14px; color: var(--muted); line-height: 2;
     }
 
-    /* ══════════════════════════════
+    /* ════════════════════════
        MAP
-    ══════════════════════════════ */
-    .map-wrap {
+    ════════════════════════ */
+    .map-center {
       display: flex; flex-direction: column;
       align-items: center; text-align: center;
-      padding: 60px 20px;
       max-width: 480px; margin: 0 auto;
+      padding: 60px 0;
     }
-    .map-block {
-      width: 64px; height: 64px;
-      background: #555;
-      border: 3px solid; border-color: #6a6a6a #2a2a2a #2a2a2a #6a6a6a;
-      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.1),
-                  inset -2px -2px 0 rgba(0,0,0,0.4);
+    .map-icon-wrap {
+      width: 80px; height: 80px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      display: flex; align-items: center; justify-content: center;
       margin: 0 auto 28px;
       animation: bob 3s ease-in-out infinite;
     }
-    @keyframes bob { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-10px) rotate(3deg)} }
+    .map-icon-wrap svg { width: 36px; height: 36px; stroke: var(--muted2); fill: none; stroke-width: 1.5; }
+    @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    .map-title { font-size: 28px; font-weight: 800; letter-spacing: -1px; margin-bottom: 14px; }
+    .map-desc  { font-size: 15px; color: var(--muted); line-height: 1.8; margin-bottom: 28px; }
 
-    .map-title { font-size: 16px; color: var(--mc-yell); text-shadow: 2px 2px 0 #7a4f00; margin-bottom: 14px; }
-    .map-desc  { font-size: 8px; color: #666; line-height: 2.4; margin-bottom: 28px; }
-
-    /* ══════════════════════════════
-       FOOTER
-    ══════════════════════════════ */
-    .footer-wrap { background: #111; border-top: 3px solid #222; }
-    .footer-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 36px;
-      font-size: 7px; color: #3a3a3a;
-      flex-wrap: wrap; gap: 8px;
-    }
-    .footer-left  { letter-spacing: 1px; }
-    .footer-right { display: flex; align-items: center; gap: 12px; }
-
-    .secure-btn {
-      font-family: var(--font); font-size: 7px;
-      color: #2a2a2a; background: none; border: none;
-      cursor: pointer; letter-spacing: 1px;
-      transition: color .2s;
-      padding: 2px 4px;
-    }
-    .secure-btn:hover { color: #555; }
-    body.secure .secure-btn { color: var(--mc-green) !important; text-shadow: 0 0 6px var(--mc-green); }
-
-    /* ══════════════════════════════
-       MODAL OVERLAY
-    ══════════════════════════════ */
-    .modal-overlay {
+    /* ════════════════════════
+       MODAL
+    ════════════════════════ */
+    .overlay {
       display: none;
       position: fixed; inset: 0; z-index: 800;
-      background: rgba(0,0,0,0.85);
+      background: rgba(0,0,0,.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       align-items: center; justify-content: center;
       padding: 20px;
     }
-    .modal-overlay.open { display: flex; }
+    .overlay.open { display: flex; }
 
     .modal {
       width: 100%; max-width: 420px;
+      padding: 32px;
     }
-    .modal-title {
-      font-size: 10px; color: var(--mc-text);
-      text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
-      margin-bottom: 16px; letter-spacing: 1px;
-    }
-    .modal-sub {
-      font-size: 8px; color: #666;
-      margin-bottom: 14px; line-height: 2;
-    }
-    .modal-row { display: flex; gap: 8px; margin-top: 12px; }
+    .modal-title { font-size: 20px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 8px; }
+    .modal-sub   { font-size: 14px; color: var(--muted); line-height: 1.7; margin-bottom: 20px; }
+    .modal-err   { font-size: 13px; color: var(--red); min-height: 18px; margin-top: 8px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
 
-    /* ══════════════════════════════
+    /* ════════════════════════
        LIGHTBOX
-    ══════════════════════════════ */
+    ════════════════════════ */
     #lb {
       display: none;
       position: fixed; inset: 0; z-index: 900;
-      background: rgba(0,0,0,0.93);
+      background: rgba(0,0,0,.92);
+      backdrop-filter: blur(12px);
       align-items: center; justify-content: center;
-      flex-direction: column; gap: 14px; padding: 20px;
+      flex-direction: column; gap: 16px; padding: 20px;
     }
     #lb.open { display: flex; }
     #lb img {
       max-width: 90vw; max-height: 82vh;
-      border: 3px solid #555; box-shadow: 5px 5px 0 rgba(0,0,0,0.7);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: 0 32px 80px rgba(0,0,0,.8);
     }
-    #lb-close { position: fixed; top: 18px; right: 24px; }
+    #lb-close {
+      position: fixed; top: 20px; right: 24px;
+    }
+
+    /* ════════════════════════
+       FOOTER
+    ════════════════════════ */
+    footer {
+      position: relative; z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 28px max(24px, calc((100vw - 1200px)/2));
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-left  { font-size: 13px; color: var(--muted); }
+    .footer-right { display: flex; align-items: center; gap: 16px; }
+    .footer-link  {
+      font-size: 13px; color: var(--muted2);
+      background: none; border: none; cursor: pointer;
+      text-decoration: none; transition: color .15s;
+    }
+    .footer-link:hover { color: var(--text); }
+    .secure-trigger {
+      font-size: 12px; color: rgba(255,255,255,.12);
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font);
+      transition: color .2s;
+      padding: 2px;
+    }
+    .secure-trigger:hover { color: rgba(255,255,255,.3); }
+    body.secure .secure-trigger { color: var(--accent) !important; }
+
+    /* ════════════════════════
+       SCROLL REVEAL
+    ════════════════════════ */
+    .reveal {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity .6s cubic-bezier(.22,1,.36,1),
+                  transform .6s cubic-bezier(.22,1,.36,1);
+    }
+    .reveal.in { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 640px) {
+      nav { padding: 0 20px; }
+      .section { padding: 72px 20px; }
+      footer { padding: 24px 20px; }
+    }
   </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════
-     LOADER
-══════════════════════════════ -->
-<div id="loader">
-  <div class="loader-logo">ETERIS</div>
-  <div class="loader-bar-wrap"><div class="loader-bar" id="lbar"></div></div>
-  <div class="loader-msg" id="lmsg">Loading world...</div>
-</div>
+<!-- Atmosphere -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
 
 <!-- ══════════════════════════════
      NAV
 ══════════════════════════════ -->
 <nav>
-  <div class="nav-logo">ETERIS</div>
-  <div class="nav-links">
-    <a class="nav-a" href="#hero">Home</a>
-    <a class="nav-a" href="#news-sec">News</a>
-    <a class="nav-a" href="#gallery-sec">Gallery</a>
-    <a class="nav-a" href="#map-sec">Map</a>
+  <div class="nav-left">
+    <a class="nav-logo" href="#hero">Eteris<span>.</span></a>
+  </div>
+  <div class="nav-right">
+    <div class="nav-links">
+      <a class="nav-a" href="#news-sec">News</a>
+      <a class="nav-a" href="#gallery-sec">Gallery</a>
+      <a class="nav-a" href="#map-sec">Map</a>
+    </div>
   </div>
 </nav>
 
@@ -595,481 +587,368 @@
      HERO
 ══════════════════════════════ -->
 <section id="hero">
-  <div class="stars" id="stars"></div>
-  <div class="sun"></div>
-  <canvas id="terrain-canvas"></canvas>
+  <div class="hero-badge">
+    <div class="badge-dot" id="badge-dot"></div>
+    <span id="badge-txt">Checking server...</span>
+  </div>
+  <!-- hidden status targets still needed for fetchStatus() -->
+  <span id="s-dot" style="display:none"></span>
+  <span id="s-txt" style="display:none"></span>
+  <span id="s-ver" style="display:none"></span>
+  <span id="s-meta" style="display:none"></span>
+  <span id="s-motd" style="display:none"></span>
 
-  <div class="hero-inner">
-    <div class="server-title fade-up">ETERIS</div>
-    <div class="server-sub fade-up">Minecraft Java Edition Server</div>
+  <h1 class="hero-title">Your world.<br>Our server.</h1>
 
-    <div class="hero-cards fade-up">
+  <p class="hero-sub">
+    Eteris is a Minecraft Java Edition server built for players who love to explore, build, and connect. Join us today.
+  </p>
 
-      <!-- Status card -->
-      <div class="hero-card mc-panel">
-        <div class="card-title">SERVER STATUS</div>
-        <div class="s-row">
-          <div class="s-dot" id="s-dot"></div>
-          <span class="s-label" id="s-txt">Checking...</span>
-          <span class="s-ver"  id="s-ver"></span>
-        </div>
-        <div class="s-meta" id="s-meta">Players: —</div>
-        <div class="s-motd" id="s-motd"></div>
-      </div>
+  <div class="hero-actions">
+    <button class="btn btn-primary" onclick="copyIP()">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy IP
+    </button>
+    <a class="btn btn-ghost" href="#gallery-sec">View Gallery</a>
+  </div>
 
-      <!-- Connect card -->
-      <div class="hero-card mc-panel">
-        <div class="card-title">CONNECT</div>
-        <div class="ip-box">eteris.hsrv.pl</div>
-        <div class="btn-col">
-          <button class="mc-btn green wide" onclick="copyIP()">Copy IP</button>
-          <button class="mc-btn stone wide" onclick="mapUnavailable()">View Map</button>
-        </div>
-        <div class="toast" id="toast-copy">IP copied to clipboard!</div>
-        <div class="toast warn" id="toast-map">Map is not available yet</div>
-      </div>
-
-    </div>
+  <div class="toast-area" style="margin-top:-48px;">
+    <span class="toast green" id="t-copy">✓ IP copied to clipboard</span>
+    <span class="toast yellow" id="t-map">Map is not available yet</span>
   </div>
 </section>
 
-<!-- divider grass -->
-<div class="blk-row" id="div-grass"></div>
+<div class="divider"></div>
 
 <!-- ══════════════════════════════
      NEWS
 ══════════════════════════════ -->
-<section id="news-sec">
-  <div class="content-wrap">
-    <div class="sec-title">News</div>
-    <div class="sec-sub">Latest updates from the server</div>
+<section id="news-sec" class="section">
+  <div class="reveal">
+    <span class="section-label">Announcements</span>
+    <h2 class="section-title"><span class="grad">Latest News</span></h2>
+    <p class="section-sub">Updates and announcements from the Eteris team.</p>
+  </div>
 
-    <!-- Admin post form (visible only in secure mode) -->
-    <div class="news-form mc-panel">
-      <div class="card-title" style="margin-bottom:16px;">POST ANNOUNCEMENT</div>
-      <div class="form-row">
-        <label class="form-label">TITLE</label>
-        <input class="mc-input" id="news-title-in" type="text" placeholder="Announcement title..." maxlength="80" />
+  <!-- Admin post form -->
+  <div class="news-form-wrap reveal">
+    <div class="card news-form">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">New Announcement</div>
+      <div>
+        <label class="form-label">Title</label>
+        <input class="form-input" id="news-title-in" type="text" placeholder="Announcement title…" maxlength="80" />
       </div>
-      <div class="form-row">
-        <label class="form-label">MESSAGE</label>
-        <textarea class="mc-input" id="news-body-in" placeholder="Write your message..." maxlength="600"></textarea>
+      <div>
+        <label class="form-label">Message</label>
+        <textarea class="form-input" id="news-body-in" placeholder="Write your message…" maxlength="600"></textarea>
       </div>
-      <button class="mc-btn green" onclick="postNews()">Post</button>
-      <span id="news-post-status" style="font-size:8px;color:var(--mc-green);margin-left:12px;"></span>
+      <div class="form-row-actions">
+        <button class="btn btn-primary btn-sm" onclick="postNews()">Publish</button>
+        <span class="form-status" id="news-status"></span>
+      </div>
     </div>
+  </div>
 
-    <div class="news-list" id="news-list">
-      <div class="news-empty">Loading news...</div>
-    </div>
+  <div class="news-grid reveal" id="news-list">
+    <div class="news-empty">Loading…</div>
   </div>
 </section>
 
-<!-- divider stone -->
-<div class="blk-row" id="div-stone"></div>
+<div class="divider"></div>
 
 <!-- ══════════════════════════════
      GALLERY
 ══════════════════════════════ -->
-<section id="gallery-sec">
-  <div class="content-wrap">
-    <div class="sec-title">Gallery</div>
-    <div class="sec-sub">Screenshots from the server — share yours below</div>
+<section id="gallery-sec" class="section">
+  <div class="reveal">
+    <span class="section-label">Community</span>
+    <h2 class="section-title"><span class="grad">Gallery</span></h2>
+    <p class="section-sub">Screenshots from the server — share your best moments below.</p>
+  </div>
 
-    <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-in').click()">
+  <div class="reveal">
+    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-in').click()">
       <input type="file" id="file-in" accept="image/*" multiple />
-      <div class="upload-title">Upload Screenshot</div>
-      <div class="upload-sub">Click or drag & drop — PNG · JPG · WEBP · max 10 MB</div>
+      <div class="upload-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <div class="upload-title">Upload a screenshot</div>
+      <div class="upload-hint">Click or drag & drop — PNG · JPG · WEBP · max 10 MB</div>
     </div>
 
-    <div class="prev-row" id="prev-row"></div>
-    <div class="up-actions" id="up-actions">
-      <button class="mc-btn green sm" onclick="doUpload()">Upload</button>
+    <div class="prev-strip" id="prev-strip"></div>
+    <div class="up-bar" id="up-bar">
+      <button class="btn btn-primary btn-sm" onclick="doUpload()">Upload</button>
       <span class="up-status" id="up-status"></span>
     </div>
+  </div>
 
-    <div class="gallery-grid" id="g-grid">
-      <div class="g-loading">Loading screenshots...</div>
-    </div>
+  <div class="gallery-grid reveal" id="g-grid">
+    <div class="g-loading">Loading screenshots…</div>
   </div>
 </section>
 
-<!-- divider dirt -->
-<div class="blk-row" id="div-dirt"></div>
+<div class="divider"></div>
 
 <!-- ══════════════════════════════
      MAP
 ══════════════════════════════ -->
-<section id="map-sec">
-  <div class="content-wrap">
-    <div class="map-wrap mc-panel">
-      <div class="map-block"></div>
-      <div class="map-title">MAP COMING SOON</div>
-      <div class="map-desc">
-        We are building an interactive live<br>
-        map of the Eteris world.<br><br>
-        Stay tuned — it will be epic.
-      </div>
-      <a class="mc-btn stone sm" href="#hero">Back to Top</a>
+<section id="map-sec" class="section">
+  <div class="map-center reveal">
+    <div class="map-icon-wrap">
+      <svg viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13V7m0 13 6-3M9 7l6-3m0 17 5.447-2.724A1 1 0 0 0 21 16.382V5.618a1 1 0 0 0-1.447-.894L15 7m0 14V7"/></svg>
     </div>
+    <h2 class="map-title">Map coming soon</h2>
+    <p class="map-desc">We're building an interactive live map of the Eteris world. Check back soon — it's going to be worth the wait.</p>
+    <a class="btn btn-ghost btn-sm" href="#hero">← Back to top</a>
   </div>
 </section>
+
+<div class="divider"></div>
 
 <!-- ══════════════════════════════
      FOOTER
 ══════════════════════════════ -->
-<div class="blk-row" id="div-footer-blocks"></div>
-<div class="footer-wrap">
-  <div class="footer-inner">
-    <span class="footer-left">Eteris · Minecraft Java Edition · eteris.hsrv.pl</span>
-    <div class="footer-right">
-      <button class="secure-btn" id="secure-btn" onclick="openSecureModal()">Secure</button>
+<footer>
+  <div class="footer-left">© 2025 Eteris · Minecraft Java Edition · Eteris.hsrv.pl</div>
+  <div class="footer-right">
+    <a class="footer-link" href="#news-sec">News</a>
+    <a class="footer-link" href="#gallery-sec">Gallery</a>
+    <a class="footer-link" href="#map-sec">Map</a>
+    <button class="secure-trigger" id="sec-btn" onclick="openSecure()">Secure</button>
+  </div>
+</footer>
+
+<!-- ══════════════════════════════
+     MODAL — SECURE
+══════════════════════════════ -->
+<div class="overlay" id="modal-secure">
+  <div class="card modal">
+    <div class="modal-title">Secure access</div>
+    <div class="modal-sub">Enter the access code to unlock admin mode. This allows you to post and delete content.</div>
+    <input class="form-input" id="sec-input" type="password" placeholder="Access code…" />
+    <div class="modal-err" id="sec-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-sm" onclick="submitSecure()">Confirm</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeOverlay('modal-secure')">Cancel</button>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════════
-     MODAL — SECURE LOGIN
-══════════════════════════════ -->
-<div class="modal-overlay" id="modal-secure">
-  <div class="modal mc-panel">
-    <div class="modal-title">SECURE ACCESS</div>
-    <div class="modal-sub">Enter the access code to unlock admin mode.</div>
-    <input class="mc-input" id="secure-input" type="password" placeholder="Access code..." />
-    <div style="font-size:8px;color:var(--mc-red);margin-top:8px;min-height:14px;" id="secure-err"></div>
-    <div class="modal-row">
-      <button class="mc-btn green" onclick="submitSecure()">Confirm</button>
-      <button class="mc-btn stone" onclick="closeModal('modal-secure')">Cancel</button>
-    </div>
+<!-- SNACKBAR -->
+<div class="snackbar" id="snackbar">
+  <div class="snackbar-icon">
+    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
   </div>
+  <span id="snackbar-txt"></span>
 </div>
 
-<!-- ══════════════════════════════
-     LIGHTBOX
-══════════════════════════════ -->
+<!-- LIGHTBOX -->
 <div id="lb">
-  <button class="mc-btn sm" id="lb-close" onclick="closeLB()">Close</button>
+  <button class="btn btn-ghost btn-sm" id="lb-close" onclick="closeLB()">✕ Close</button>
   <img id="lb-img" src="" alt="" />
 </div>
 
 <script>
-/* ════════════════════════════════
+/* ═══════════════════════
    SUPABASE
-════════════════════════════════ */
+═══════════════════════ */
 const sb = supabase.createClient(
   'https://jczxgcbxqnnhlafvekul.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjenhnY2J4cW5uaGxhZnZla3VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzk2NzEsImV4cCI6MjA5MzA1NTY3MX0.oMu9O5woqMlzL9w1UIinZp7Nac778ZQUUmv7im0dGso'
 );
-
 const ACCESS_CODE = 'QAJP';
 
-/* ════════════════════════════════
-   LOADER
-════════════════════════════════ */
-(function(){
-  const bar  = document.getElementById('lbar');
-  const msg  = document.getElementById('lmsg');
-  const msgs = ['Generating terrain...','Placing blocks...','Growing trees...','Spawning mobs...','Loading chunks...','Almost there...'];
-  let pct=0, mi=0;
-  const STEP = 100/36;
-  const iv = setInterval(() => {
-    pct = Math.min(100, pct + STEP + Math.random()*STEP*0.5);
-    bar.style.width = pct + '%';
-    const ni = Math.min(msgs.length-1, Math.floor(pct/(100/msgs.length)));
-    if(ni !== mi){ mi=ni; msg.textContent=msgs[mi]; }
-    if(pct >= 100){
-      clearInterval(iv);
-      msg.textContent = 'Done!';
-      setTimeout(() => {
-        document.getElementById('loader').classList.add('hidden');
-        document.querySelectorAll('.fade-up').forEach((el,i) => {
-          setTimeout(() => el.classList.add('in'), i * 130);
-        });
-      }, 400);
-    }
-  }, 55);
-})();
+/* ═══════════════════════
+   SCROLL REVEAL
+═══════════════════════ */
+const revealObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(e.isIntersecting){ e.target.classList.add('in'); revealObs.unobserve(e.target); }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
-/* ════════════════════════════════
-   STARS
-════════════════════════════════ */
-(function(){
-  const el = document.getElementById('stars');
-  for(let i=0;i<70;i++){
-    const s = document.createElement('div');
-    s.className = 'star';
-    const sz = Math.random()<0.2 ? 3 : 2;
-    s.style.cssText = `width:${sz}px;height:${sz}px;top:${Math.random()*60}%;left:${Math.random()*100}%;opacity:${0.3+Math.random()*0.7}`;
-    el.appendChild(s);
-  }
-})();
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
 
-/* ════════════════════════════════
-   TERRAIN CANVAS
-════════════════════════════════ */
-(function(){
-  const canvas = document.getElementById('terrain-canvas');
-  const ctx = canvas.getContext('2d');
-  function render(){
-    canvas.width  = window.innerWidth;
-    canvas.height = 250;
-    const W=canvas.width, H=canvas.height, BS=32;
-    const cols = Math.ceil(W/BS)+2;
-    const colH = i => Math.max(2, Math.min(6, Math.round(Math.sin(i*.18)*1.4+Math.sin(i*.07)*1.1+3.2)));
-    ctx.clearRect(0,0,W,H);
-    for(let i=0;i<cols;i++){
-      const x=i*BS, h=colH(i), top=H-h*BS;
-      // grass top
-      ctx.fillStyle='#4e8a1e'; ctx.fillRect(x,top,BS,BS);
-      ctx.fillStyle='#61aa28'; ctx.fillRect(x,top,BS,7);
-      ctx.fillStyle='#3a6b12'; ctx.fillRect(x,top+7,BS,3);
-      ctx.fillStyle='rgba(255,255,255,0.12)'; ctx.fillRect(x,top,2,BS);
-      ctx.fillStyle='rgba(0,0,0,0.22)';       ctx.fillRect(x+BS-2,top,2,BS);
-      ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=.5; ctx.strokeRect(x,top,BS,BS);
-      // dirt
-      for(let j=1;j<h;j++){
-        const y=top+j*BS;
-        ctx.fillStyle=j===1?'#7a5030':'#6a431e'; ctx.fillRect(x,y,BS,BS);
-        ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.fillRect(x+9,y+9,4,4); ctx.fillRect(x+20,y+20,3,3);
-        ctx.fillStyle='rgba(255,255,255,0.06)'; ctx.fillRect(x,y,2,BS);
-        ctx.fillStyle='rgba(0,0,0,0.18)';       ctx.fillRect(x+BS-2,y,2,BS);
-        ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=.5; ctx.strokeRect(x,y,BS,BS);
-      }
-    }
-    // trees
-    for(let i=2;i<cols-2;i++){
-      if((i%6===0||i%9===0)&&Math.abs(Math.sin(i*.18))>.05){
-        const x=i*BS, h=colH(i), top=H-h*BS;
-        const tH=32+(i%3)*12, lS=40+(i%4)*8, tx=x+BS/2-8;
-        ctx.fillStyle='#6b4c2a'; ctx.fillRect(tx+4,top-tH,8,tH);
-        ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(tx+4,top-tH,2,tH);
-        ctx.fillStyle='rgba(0,0,0,0.25)';       ctx.fillRect(tx+10,top-tH,2,tH);
-        ctx.fillStyle='#236e12'; ctx.fillRect(tx+8-lS/2,top-tH-lS*.55,lS,lS*.65);
-        ctx.fillStyle='#2d8e18'; ctx.fillRect(tx+8-lS/2+5,top-tH-lS*.85,lS-10,lS*.45);
-        ctx.fillStyle='#1e5a0e'; ctx.fillRect(tx+8-lS/2,top-tH-lS*.55,lS,3);
-      }
-    }
-  }
-  window.addEventListener('resize', render);
-  render();
-})();
-
-/* ════════════════════════════════
-   BLOCK DIVIDERS
-════════════════════════════════ */
-(function(){
-  const sets = {
-    'div-grass':         ['#5d9e32','#4e8a1e','#61aa28'],
-    'div-stone':         ['#828282','#6e6e6e','#919191'],
-    'div-dirt':          ['#7a5030','#6a431e','#8a6040'],
-    'div-footer-blocks': ['#6b4c2a','#5a3d1a','#7a5c38'],
-  };
-  function fill(){
-    const n = Math.ceil(window.innerWidth/32)+2;
-    Object.entries(sets).forEach(([id, pal]) => {
-      const el = document.getElementById(id);
-      if(!el) return;
-      el.innerHTML = '';
-      for(let i=0;i<n;i++){
-        const d=document.createElement('div');
-        d.className='blk-cell';
-        d.style.background=pal[i%pal.length];
-        el.appendChild(d);
-      }
-    });
-  }
-  window.addEventListener('resize', fill);
-  fill();
-})();
-
-/* ════════════════════════════════
+/* ═══════════════════════
    SERVER STATUS
-════════════════════════════════ */
+═══════════════════════ */
 async function fetchStatus(){
   try{
-    const r=await fetch('https://api.mcstatus.io/v2/status/java/eteris.hsrv.pl:25679');
-    const d=await r.json();
-    const dot=document.getElementById('s-dot');
-    const txt=document.getElementById('s-txt');
-    const ver=document.getElementById('s-ver');
-    const meta=document.getElementById('s-meta');
-    const motd=document.getElementById('s-motd');
+    const r = await fetch('https://api.mcstatus.io/v2/status/java/eteris.hsrv.pl:25679');
+    const d = await r.json();
+    const dot  = document.getElementById('s-dot');
+    const txt  = document.getElementById('s-txt');
+    const ver  = document.getElementById('s-ver');
+    const meta = document.getElementById('s-meta');
+    const motd = document.getElementById('s-motd');
+    const bdot = document.getElementById('badge-dot');
+    const btxt = document.getElementById('badge-txt');
     if(d.online){
-      dot.className='s-dot on';
-      txt.textContent='ONLINE'; txt.style.color='var(--mc-green)';
-      ver.textContent=d.version?.name_clean||'';
+      dot.className = 'status-dot on';
+      txt.textContent = 'Online'; txt.style.color = 'var(--accent)';
+      ver.textContent = d.version?.name_clean || '';
       const on=d.players?.online??0, mx=d.players?.max??0;
-      meta.textContent=`Players: ${on} / ${mx}`;
-      if(d.motd?.clean){ motd.textContent=d.motd.clean; motd.style.display='block'; }
+      meta.textContent = `${on} / ${mx} players online`;
+      btxt.textContent = `Server online · ${on} player${on!==1?'s':''} connected`;
     } else {
-      dot.className='s-dot off';
-      txt.textContent='OFFLINE'; txt.style.color='var(--mc-red)';
-      meta.textContent='Players: —';
+      dot.className = 'status-dot off';
+      txt.textContent = 'Offline'; txt.style.color = 'var(--red)';
+      meta.textContent = 'Players —';
+      bdot.style.background = 'var(--red)';
+      bdot.style.animation = 'none';
+      btxt.textContent = 'Server is currently offline';
     }
-  } catch{ document.getElementById('s-txt').textContent='Unavailable'; }
+  } catch {
+    document.getElementById('s-txt').textContent = 'Unavailable';
+  }
 }
 
-/* ════════════════════════════════
-   COPY IP / MAP TOAST
-════════════════════════════════ */
+/* ═══════════════════════
+   COPY IP / MAP
+═══════════════════════ */
+function showToast(msg, warn=false){
+  const sb = document.getElementById('snackbar');
+  const tx = document.getElementById('snackbar-txt');
+  tx.textContent = msg;
+  sb.classList.toggle('warn', warn);
+  sb.classList.remove('show');
+  void sb.offsetWidth;
+  sb.classList.add('show');
+  clearTimeout(sb._t);
+  sb._t = setTimeout(()=>sb.classList.remove('show'), 2500);
+}
+
 function copyIP(){
   navigator.clipboard.writeText('eteris.hsrv.pl');
-  showToast('toast-copy');
+  showToast('IP copied to clipboard');
 }
-function mapUnavailable(){ showToast('toast-map'); }
+function mapUnavail(){ showToast('Map is not available yet', true); }
 
-function showToast(id){
-  const el=document.getElementById(id);
-  el.parentElement.querySelectorAll('.toast').forEach(t=>t.classList.remove('show'));
-  el.classList.add('show');
-  clearTimeout(el._t);
-  el._t=setTimeout(()=>el.classList.remove('show'), 2500);
-}
-
-/* ════════════════════════════════
-   SECURE MODE
-════════════════════════════════ */
+/* ═══════════════════════
+   SECURE
+═══════════════════════ */
 let secureMode = false;
 
-function openSecureModal(){
-  if(secureMode){
-    secureMode=false;
-    document.body.classList.remove('secure');
-    document.getElementById('secure-btn').textContent='Secure';
-    return;
-  }
-  document.getElementById('secure-input').value='';
-  document.getElementById('secure-err').textContent='';
-  openModal('modal-secure');
-  setTimeout(()=>document.getElementById('secure-input').focus(), 100);
+function openSecure(){
+  if(secureMode){ secureMode=false; document.body.classList.remove('secure'); document.getElementById('sec-btn').textContent='Secure'; return; }
+  document.getElementById('sec-input').value='';
+  document.getElementById('sec-err').textContent='';
+  document.getElementById('modal-secure').classList.add('open');
+  setTimeout(()=>document.getElementById('sec-input').focus(), 80);
 }
-
 function submitSecure(){
-  const val = document.getElementById('secure-input').value.trim();
-  if(val === ACCESS_CODE){
-    secureMode=true;
-    document.body.classList.add('secure');
-    document.getElementById('secure-btn').textContent='Secure [ON]';
-    closeModal('modal-secure');
+  if(document.getElementById('sec-input').value.trim()===ACCESS_CODE){
+    secureMode=true; document.body.classList.add('secure');
+    document.getElementById('sec-btn').textContent='Secure [ON]';
+    closeOverlay('modal-secure');
   } else {
-    document.getElementById('secure-err').textContent='Wrong code.';
-    document.getElementById('secure-input').value='';
-    document.getElementById('secure-input').focus();
+    document.getElementById('sec-err').textContent='Incorrect code.';
+    document.getElementById('sec-input').value='';
+    document.getElementById('sec-input').focus();
   }
 }
+document.getElementById('sec-input').addEventListener('keydown',e=>{ if(e.key==='Enter') submitSecure(); });
 
-document.getElementById('secure-input').addEventListener('keydown', e=>{ if(e.key==='Enter') submitSecure(); });
+/* ═══════════════════════
+   OVERLAYS
+═══════════════════════ */
+function closeOverlay(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open')); closeLB(); }});
 
-/* ════════════════════════════════
-   MODALS
-════════════════════════════════ */
-function openModal(id){
-  document.getElementById(id).classList.add('open');
-}
-function closeModal(id){
-  document.getElementById(id).classList.remove('open');
-}
-document.querySelectorAll('.modal-overlay').forEach(ov=>{
-  ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('open'); });
-});
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open')); });
-
-/* ════════════════════════════════
+/* ═══════════════════════
    NEWS
-════════════════════════════════ */
+═══════════════════════ */
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 async function loadNews(){
   const list=document.getElementById('news-list');
-  list.innerHTML='<div class="news-empty">Loading...</div>';
   const {data,error}=await sb.from('news').select('*').order('created_at',{ascending:false});
-  if(error||!data?.length){
-    list.innerHTML='<div class="news-empty">No announcements yet.</div>';
-    return;
-  }
+  if(error||!data?.length){ list.innerHTML='<div class="news-empty">No announcements yet.</div>'; return; }
   list.innerHTML='';
-  data.forEach(n=>{
+  data.forEach((n,i)=>{
     const date=new Date(n.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-    const card=document.createElement('div');
-    card.className='news-card';
-    card.dataset.id=n.id;
-    card.innerHTML=`
-      <div class="news-card-header">
-        <span class="news-tag">ANNOUNCEMENT</span>
+    const c=document.createElement('div');
+    c.className='card news-card';
+    c.style.animationDelay=i*60+'ms';
+    c.innerHTML=`
+      <div class="news-meta">
+        <span class="news-tag">Announcement</span>
         <span class="news-date">${date}</span>
       </div>
-      <div class="news-title">${escHtml(n.title)}</div>
-      <div class="news-body">${escHtml(n.body)}</div>
-      <button class="mc-btn red sm news-del-btn" onclick="deleteNews(${n.id}, this)">Delete</button>
+      <div class="news-title">${esc(n.title)}</div>
+      <div class="news-body">${esc(n.body)}</div>
+      <button class="btn btn-xs news-del" style="background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.2);" onclick="delNews(${n.id},this)">Delete</button>
     `;
-    list.appendChild(card);
+    list.appendChild(c);
   });
 }
 
 async function postNews(){
   const title=document.getElementById('news-title-in').value.trim();
-  const body =document.getElementById('news-body-in').value.trim();
-  const st=document.getElementById('news-post-status');
-  if(!title||!body){ st.textContent='Fill in both fields.'; st.style.color='var(--mc-red)'; setTimeout(()=>st.textContent='',2000); return; }
+  const body=document.getElementById('news-body-in').value.trim();
+  const st=document.getElementById('news-status');
+  if(!title||!body){ st.style.color='var(--red)'; st.textContent='Fill in both fields.'; setTimeout(()=>st.textContent='',2000); return; }
   const {error}=await sb.from('news').insert({title,body});
-  if(error){ st.textContent='Error posting.'; st.style.color='var(--mc-red)'; setTimeout(()=>st.textContent='',2000); return; }
+  if(error){ st.style.color='var(--red)'; st.textContent='Error posting.'; setTimeout(()=>st.textContent='',2000); return; }
   document.getElementById('news-title-in').value='';
   document.getElementById('news-body-in').value='';
-  st.textContent='Posted!'; st.style.color='var(--mc-green)';
+  st.style.color='var(--accent)'; st.textContent='Published!';
   setTimeout(()=>st.textContent='',2500);
   loadNews();
 }
 
-async function deleteNews(id, btn){
-  btn.textContent='...'; btn.disabled=true;
+async function delNews(id,btn){
+  btn.textContent='…'; btn.disabled=true;
   const {error}=await sb.from('news').delete().eq('id',id);
   if(!error) btn.closest('.news-card').remove();
-  else{ btn.textContent='Delete'; btn.disabled=false; }
+  else { btn.textContent='Delete'; btn.disabled=false; }
 }
 
-function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-/* ════════════════════════════════
+/* ═══════════════════════
    GALLERY UPLOAD
-════════════════════════════════ */
+═══════════════════════ */
 let staged=[];
 const dz=document.getElementById('drop-zone');
-const finp=document.getElementById('file-in');
+const fi=document.getElementById('file-in');
 
-finp.addEventListener('change', e=>stage(e.target.files));
-dz.addEventListener('dragover',  e=>{ e.preventDefault(); dz.classList.add('drag'); });
-dz.addEventListener('dragleave', ()=>dz.classList.remove('drag'));
-dz.addEventListener('drop',      e=>{ e.preventDefault(); dz.classList.remove('drag'); stage(e.dataTransfer.files); });
+fi.addEventListener('change',e=>stage(e.target.files));
+dz.addEventListener('dragover',e=>{ e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{ e.preventDefault(); dz.classList.remove('drag'); stage(e.dataTransfer.files); });
 
 function stage(files){
   staged=[...staged,...Array.from(files)];
-  const pr=document.getElementById('prev-row');
-  pr.innerHTML='';
-  staged.forEach(f=>{ const img=document.createElement('img'); img.className='prev-img'; img.src=URL.createObjectURL(f); pr.appendChild(img); });
-  document.getElementById('up-actions').style.display=staged.length?'flex':'none';
+  const strip=document.getElementById('prev-strip');
+  strip.innerHTML='';
+  staged.forEach(f=>{ const img=document.createElement('img'); img.className='prev-img'; img.src=URL.createObjectURL(f); strip.appendChild(img); });
+  document.getElementById('up-bar').style.display=staged.length?'flex':'none';
 }
 
 async function doUpload(){
   if(!staged.length) return;
   const st=document.getElementById('up-status');
-  st.textContent='Uploading...';
+  st.textContent='Uploading…';
   let ok=0;
   for(const f of staged){
     const name=`${Date.now()}_${Math.random().toString(36).slice(2)}_${f.name}`;
     const {error}=await sb.storage.from('screenshots').upload(name,f,{contentType:f.type});
     if(!error) ok++;
   }
-  st.textContent=`Done! ${ok}/${staged.length} uploaded`;
-  staged=[]; document.getElementById('prev-row').innerHTML=''; finp.value='';
-  document.getElementById('up-actions').style.display='none';
-  setTimeout(()=>{ st.textContent=''; },3000);
+  st.textContent=`✓ ${ok} screenshot${ok!==1?'s':''} uploaded`;
+  staged=[]; document.getElementById('prev-strip').innerHTML=''; fi.value='';
+  document.getElementById('up-bar').style.display='none';
+  setTimeout(()=>st.textContent='',3000);
   loadGallery();
 }
 
-/* ════════════════════════════════
+/* ═══════════════════════
    GALLERY LOAD
-════════════════════════════════ */
+═══════════════════════ */
 async function loadGallery(){
   const grid=document.getElementById('g-grid');
-  grid.innerHTML='<div class="g-loading">Loading screenshots...</div>';
+  grid.innerHTML='<div class="g-loading">Loading screenshots…</div>';
   const {data,error}=await sb.storage.from('screenshots').list('',{limit:100,sortBy:{column:'created_at',order:'desc'}});
   if(error||!data?.length){ grid.innerHTML='<div class="g-empty">No screenshots yet.<br>Be the first to share one!</div>'; return; }
   grid.innerHTML='';
@@ -1077,40 +956,38 @@ async function loadGallery(){
     if(!file.name) continue;
     const {data:u}=sb.storage.from('screenshots').getPublicUrl(file.name);
     if(!u?.publicUrl) continue;
-    const item=document.createElement('div');
-    item.className='g-item';
     const clean=file.name.replace(/^\d+_[a-z0-9]+_/,'');
-    const date=file.created_at?new Date(file.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
-    item.innerHTML=`
+    const c=document.createElement('div');
+    c.className='card g-card';
+    c.innerHTML=`
       <img src="${u.publicUrl}" alt="" loading="lazy" onclick="openLB('${u.publicUrl}')" />
-      <div class="g-caption">
-        <span>${clean}</span>
-        <button class="g-del" onclick="deleteScreenshot('${file.name}',this)">Delete</button>
+      <div class="g-info">
+        <span class="g-name">${clean}</span>
+        <button class="g-del" onclick="delShot('${file.name}',this)">Delete</button>
       </div>
     `;
-    grid.appendChild(item);
+    grid.appendChild(c);
   }
 }
 
-async function deleteScreenshot(name, btn){
+async function delShot(name,btn){
   if(!secureMode) return;
-  btn.textContent='...'; btn.disabled=true;
+  btn.textContent='…'; btn.disabled=true;
   const {error}=await sb.storage.from('screenshots').remove([name]);
-  if(!error) btn.closest('.g-item').remove();
-  else{ btn.textContent='Delete'; btn.disabled=false; }
+  if(!error) btn.closest('.g-card').remove();
+  else { btn.textContent='Delete'; btn.disabled=false; }
 }
 
-/* ════════════════════════════════
+/* ═══════════════════════
    LIGHTBOX
-════════════════════════════════ */
+═══════════════════════ */
 function openLB(url){ document.getElementById('lb-img').src=url; document.getElementById('lb').classList.add('open'); }
 function closeLB(){ document.getElementById('lb').classList.remove('open'); document.getElementById('lb-img').src=''; }
-document.getElementById('lb').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeLB(); });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeLB(); document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open')); }});
+document.getElementById('lb').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeLB(); });
 
-/* ════════════════════════════════
+/* ═══════════════════════
    INIT
-════════════════════════════════ */
+═══════════════════════ */
 fetchStatus();
 setInterval(fetchStatus, 60000);
 loadNews();
