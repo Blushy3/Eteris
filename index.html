@@ -86,24 +86,8 @@
       font-size: 15px; font-weight: 700;
       color: var(--text); letter-spacing: .5px;
       text-decoration: none;
-      display: flex; align-items: center; gap: 10px;
     }
-    .nav-logo img { width: 28px; height: 28px; border-radius: 6px; image-rendering: pixelated; flex-shrink: 0; }
-    .logo-text { display: flex; align-items: baseline; gap: 0; font-size: 17px; color: var(--text); }
-    .logo-text .dot { color: var(--accent); }
-    /* share btn */
-    .share-btn {
-      font-family: var(--font); font-size: 11px; font-weight: 600;
-      color: var(--muted2);
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 6px;
-      cursor: pointer; padding: 3px 8px;
-      transition: color .15s, background .15s, border-color .15s;
-      display: inline-flex; align-items: center; gap: 4px;
-      flex-shrink: 0;
-    }
-    .share-btn:hover { color: var(--accent); background: rgba(74,222,128,.08); border-color: rgba(74,222,128,.2); }
+    .nav-logo span { color: var(--accent); }
     .nav-links { display: flex; align-items: center; gap: 4px; }
     .nav-a {
       font-size: 14px; font-weight: 500; color: var(--muted);
@@ -341,12 +325,9 @@
       margin-bottom: 48px; line-height: 1.7;
     }
 
-    .sec-see-all { display:flex; align-items:center; justify-content:space-between; margin-bottom: 28px; }
-    .sec-see-all h2 { font-size: clamp(22px,3vw,30px); font-weight:800; letter-spacing:-0.5px; background:linear-gradient(135deg,#fff 30%,#94a3b8 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-
-    /* hide excess cards in preview */
-    #g-grid .g-card:nth-child(n+7) { display: none; }
-    #news-list .news-card:nth-child(n+4) { display: none; }
+    /* ════════════════════════
+       NEWS
+    ════════════════════════ */
     .news-grid { display: flex; flex-direction: column; gap: 12px; }
 
     .news-card {
@@ -641,13 +622,9 @@
 ══════════════════════════════ -->
 <section id="news-sec" class="section">
   <div class="reveal">
-    <div class="sec-see-all">
-      <div>
-        <span class="section-label">Announcements</span>
-        <h2>Latest News</h2>
-      </div>
-      <a class="btn btn-ghost btn-sm" href="news.html">See all →</a>
-    </div>
+    <span class="section-label">Announcements</span>
+    <h2 class="section-title"><span class="grad">Latest News</span></h2>
+    <p class="section-sub">Updates and announcements from the Eteris team.</p>
   </div>
 
   <!-- Admin post form -->
@@ -681,13 +658,9 @@
 ══════════════════════════════ -->
 <section id="gallery-sec" class="section">
   <div class="reveal">
-    <div class="sec-see-all">
-      <div>
-        <span class="section-label">Community</span>
-        <h2>Gallery</h2>
-      </div>
-      <a class="btn btn-ghost btn-sm" href="gallery.html">See all →</a>
-    </div>
+    <span class="section-label">Community</span>
+    <h2 class="section-title"><span class="grad">Gallery</span></h2>
+    <p class="section-sub">Screenshots from the server — share your best moments below.</p>
   </div>
 
   <div class="reveal">
@@ -955,25 +928,21 @@ async function doUpload(){
 async function loadGallery(){
   const grid=document.getElementById('g-grid');
   grid.innerHTML='<div class="g-loading">Loading screenshots…</div>';
-  const {data,error}=await sb.from('screenshots')
-    .select('*, categories(name)')
-    .order('uploaded_at',{ascending:false})
-    .limit(6);
+  const {data,error}=await sb.storage.from('screenshots').list('',{limit:100,sortBy:{column:'created_at',order:'desc'}});
   if(error||!data?.length){ grid.innerHTML='<div class="g-empty">No screenshots yet.<br>Be the first to share one!</div>'; return; }
   grid.innerHTML='';
-  for(const s of data){
-    const {data:u}=sb.storage.from('screenshots').getPublicUrl(s.storage_key);
+  for(const file of data){
+    if(!file.name) continue;
+    const {data:u}=sb.storage.from('screenshots').getPublicUrl(file.name);
     if(!u?.publicUrl) continue;
-    const catName=s.categories?.name||'Uncategorized';
-    const date=new Date(s.uploaded_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-    const clean=s.storage_key.replace(/^\d+_[a-z0-9]+_/,'');
+    const clean=file.name.replace(/^\d+_[a-z0-9]+_/,'');
     const c=document.createElement('div');
     c.className='card g-card';
     c.innerHTML=`
       <img src="${u.publicUrl}" alt="" loading="lazy" onclick="openLB('${u.publicUrl}')" />
       <div class="g-info">
         <span class="g-name">${clean}</span>
-        <span style="font-size:11px;color:var(--muted2);">${catName} · ${date}</span>
+        <button class="g-del" onclick="delShot('${file.name}',this)">Delete</button>
       </div>
     `;
     grid.appendChild(c);
