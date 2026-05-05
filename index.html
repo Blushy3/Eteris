@@ -289,6 +289,19 @@
       to   { opacity:1; transform:translateY(0); }
     }
 
+    @keyframes fadeOverlay {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(28px) scale(.97); }
+      to   { opacity: 1; transform: translateY(0)   scale(1); }
+    }
+    @keyframes zoomIn {
+      from { opacity: 0; transform: scale(.92); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
     /* ── GRADIENT DIVIDER ── */
     .divider {
       width: 100%;
@@ -504,6 +517,7 @@
       backdrop-filter: blur(12px);
       align-items: center; justify-content: center;
       flex-direction: column; gap: 16px; padding: 20px;
+      animation: fadeOverlay .25s ease forwards;
     }
     #lb.open { display: flex; }
     #lb img {
@@ -511,6 +525,7 @@
       border-radius: var(--radius-lg);
       border: 1px solid var(--border);
       box-shadow: 0 32px 80px rgba(0,0,0,.8);
+      animation: zoomIn .35s cubic-bezier(.22,1,.36,1) forwards;
     }
     #lb-close {
       position: fixed; top: 20px; right: 24px;
@@ -553,6 +568,49 @@
                   transform .6s cubic-bezier(.22,1,.36,1);
     }
     .reveal.in { opacity: 1; transform: translateY(0); }
+
+    /* news modal */
+    #news-modal {
+      display: none;
+      position: fixed; inset: 0; z-index: 900;
+      background: rgba(0,0,0,.85);
+      backdrop-filter: blur(12px);
+      align-items: center; justify-content: center;
+      padding: 20px;
+      animation: fadeOverlay .25s ease forwards;
+    }
+    #news-modal.open { display: flex; }
+    .news-modal-box {
+      width: 100%; max-width: 580px;
+      padding: 36px;
+      position: relative;
+      max-height: 85vh;
+      overflow-y: auto;
+      animation: slideUp .3s cubic-bezier(.22,1,.36,1) forwards;
+    }
+    .nm-close { position: absolute; top: 20px; right: 20px; }
+    .nm-tag {
+      font-size: 11px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--accent);
+      background: rgba(74,222,128,.1); border: 1px solid rgba(74,222,128,.2);
+      border-radius: 100px; padding: 3px 10px;
+      display: inline-block; margin-bottom: 6px;
+    }
+    .nm-date { font-size: 12px; color: var(--muted2); margin-left: 8px; }
+    .nm-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; margin: 14px 0 12px; line-height: 1.35; }
+    .nm-body  { font-size: 15px; color: var(--muted); line-height: 1.8; }
+    .share-btn {
+      font-family: var(--font); font-size: 11px; font-weight: 600;
+      color: var(--muted2);
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 6px;
+      cursor: pointer; padding: 4px 10px;
+      transition: color .15s, background .15s, border-color .15s;
+      display: inline-flex; align-items: center; gap: 5px;
+      flex-shrink: 0;
+    }
+    .share-btn:hover { color: var(--accent); background: rgba(74,222,128,.08); border-color: rgba(74,222,128,.2); }
 
     @media (max-width: 640px) {
       nav { padding: 0 20px; }
@@ -722,6 +780,17 @@
   <span id="snackbar-txt"></span>
 </div>
 
+<!-- NEWS MODAL -->
+<div id="news-modal" onclick="if(event.target===this)closeNewsModal()">
+  <div class="card news-modal-box">
+    <button class="btn btn-ghost btn-sm nm-close" onclick="closeNewsModal()">✕ Close</button>
+    <span class="nm-tag">Announcement</span>
+    <span class="nm-date" id="nm-date"></span>
+    <div class="nm-title" id="nm-title"></div>
+    <div class="nm-body"  id="nm-body"></div>
+  </div>
+</div>
+
 <!-- LIGHTBOX -->
 <div id="lb">
   <button class="btn btn-ghost btn-sm" id="lb-close" onclick="closeLB()">✕ Close</button>
@@ -847,19 +916,27 @@ async function loadNews(){
   if(error||!data?.length){ list.innerHTML='<div class="news-empty">No announcements yet.</div>'; return; }
   list.innerHTML='';
   data.forEach((n,i)=>{
-    const date=new Date(n.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-    const c=document.createElement('div');
+     const date=new Date(n.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+     const c=document.createElement('div');
     c.className='card news-card';
     c.style.animationDelay=i*60+'ms';
+    c.style.cursor='pointer';
     c.innerHTML=`
       <div class="news-meta">
         <span class="news-tag">Announcement</span>
         <span class="news-date">${date}</span>
       </div>
       <div class="news-title">${esc(n.title)}</div>
-      <div class="news-body">${esc(n.body)}</div>
-      <button class="btn btn-xs news-del" style="background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.2);" onclick="delNews(${n.id},this)">Delete</button>
+      <div class="news-body">${esc(n.body.slice(0,140))}${n.body.length>140?'…':''}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <button class="share-btn" data-share>Share</button>
+        <button class="btn btn-xs" style="background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.2);display:none;" data-del>Delete</button>
+      </div>
     `;
+    c.querySelector('[data-share]').onclick = e => { e.stopPropagation(); shareNews(n.id); };
+    c.querySelector('[data-del]').onclick   = e => { e.stopPropagation(); delNews(n.id, e.target); };
+    if(secureMode) c.querySelector('[data-del]').style.display='inline-flex';
+    c.onclick = () => openNewsModal(n);
     list.appendChild(c);
   });
 }
@@ -939,10 +1016,13 @@ async function loadGallery(){
     const c=document.createElement('div');
     c.className='card g-card';
     c.innerHTML=`
-      <img src="${u.publicUrl}" alt="" loading="lazy" onclick="openLB('${u.publicUrl}')" />
+      <img src="${u.publicUrl}" alt="" loading="lazy" onclick="openLB('${u.publicUrl}','${file.name}')" />
       <div class="g-info">
         <span class="g-name">${clean}</span>
-        <button class="g-del" onclick="delShot('${file.name}',this)">Delete</button>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+          <button class="share-btn" onclick="shareShot('${file.name}',event)"><svg width='11' height='11' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><circle cx='18' cy='5' r='3'/><circle cx='6' cy='12' r='3'/><circle cx='18' cy='19' r='3'/><line x1='8.59' y1='13.51' x2='15.42' y2='17.49'/><line x1='15.41' y1='6.51' x2='8.59' y2='10.49'/></svg>Share</button>
+          <button class="g-del" onclick="delShot('${file.name}',this)">Delete</button>
+        </div>
       </div>
     `;
     grid.appendChild(c);
@@ -960,17 +1040,94 @@ async function delShot(name,btn){
 /* ═══════════════════════
    LIGHTBOX
 ═══════════════════════ */
-function openLB(url){ document.getElementById('lb-img').src=url; document.getElementById('lb').classList.add('open'); }
-function closeLB(){ document.getElementById('lb').classList.remove('open'); document.getElementById('lb-img').src=''; }
+let currentLBFile = '';
+function openLB(url, filename){
+  currentLBFile = filename || '';
+  const lb = document.getElementById('lb');
+  const img = document.getElementById('lb-img');
+  img.src = url;
+  lb.style.animation = 'none';
+  img.style.animation = 'none';
+  lb.classList.add('open');
+  requestAnimationFrame(()=>{
+    lb.style.animation = '';
+    img.style.animation = '';
+  });
+  if(filename) history.replaceState(null,'',`?shot=${encodeURIComponent(filename)}`);
+}
+function closeLB(){
+  document.getElementById('lb').classList.remove('open');
+  document.getElementById('lb-img').src='';
+  history.replaceState(null,'',location.pathname);
+}
 document.getElementById('lb').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeLB(); });
+
+function openNewsModal(n){
+  const date = new Date(n.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('nm-date').textContent = date;
+  document.getElementById('nm-title').textContent = n.title;
+  document.getElementById('nm-body').textContent  = n.body;
+  const modal = document.getElementById('news-modal');
+  const box   = modal.querySelector('.news-modal-box');
+  modal.style.animation = 'none';
+  box.style.animation   = 'none';
+  modal.classList.add('open');
+  requestAnimationFrame(()=>{
+    modal.style.animation = '';
+    box.style.animation   = '';
+  });
+  history.replaceState(null,'',`?news=${n.id}`);
+}
+
+function closeNewsModal(){
+  document.getElementById('news-modal').classList.remove('open');
+  history.replaceState(null,'',location.pathname);
+}
+
+/* ── SHARE ── */
+function shareShot(filename, e){
+  if(e) e.stopPropagation();
+  const url = `${location.origin}${location.pathname}?shot=${encodeURIComponent(filename)}`;
+  navigator.clipboard.writeText(url);
+  showToast('Link copied!');
+}
+
+function shareNews(id, e){
+  if(e) e.stopPropagation();
+  const url = `${location.origin}${location.pathname}?news=${id}`;
+  navigator.clipboard.writeText(url);
+  showToast('Link copied!');
+}
 
 /* ═══════════════════════
    INIT
 ═══════════════════════ */
 fetchStatus();
 setInterval(fetchStatus, 60000);
-loadNews();
-loadGallery();
+
+(async ()=>{
+  await loadNews();
+  const newsId = new URLSearchParams(location.search).get('news');
+  if(newsId){
+    // find the news object and open modal
+    const cards = document.querySelectorAll('#news-list .news-card');
+    // we stored n on onclick — re-fetch to get the object
+    const {data} = await sb.from('news').select('*').eq('id', newsId).single();
+    if(data) openNewsModal(data);
+  }
+
+  await loadGallery();
+  const shot = new URLSearchParams(location.search).get('shot');
+  if(shot){
+    const imgs = document.querySelectorAll('#g-grid img');
+    imgs.forEach(img=>{
+      if(img.getAttribute('onclick')?.includes(encodeURIComponent(shot)) ||
+         img.getAttribute('onclick')?.includes(shot)){
+        img.click();
+      }
+    });
+  }
+})();
 </script>
 </body>
 </html>
